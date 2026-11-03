@@ -138,6 +138,45 @@ FROM {FQ}.gold_campaign_advertiser WHERE advertiser_id='ADV0062'""", "Gold unifi
     write("01_lakeflow_ingest.md", "Stage 1 — Lakeflow ingestion (raw → bronze → silver → gold)", "\n".join(b))
 
 
+# ---------------------------------------------------------------- 01b Lakeflow pipeline source
+def pipeline_source():
+    """Export the source the DEPLOYED pipeline runs, prove it matches the repo, and inline it."""
+    import base64
+    import hashlib
+    from databricks.sdk.service.workspace import ExportFormat
+    repo = os.path.join(os.path.dirname(OUT), "build")
+    p = w.pipelines.get(PIPELINE_ID)
+    rows, blocks = [], []
+    for lib in p.spec.libraries or []:
+        if not lib.file:
+            continue
+        deployed = base64.b64decode(w.workspace.export(lib.file.path, format=ExportFormat.SOURCE).content).decode()
+        local_path = os.path.join(repo, "dabs", "src", os.path.basename(lib.file.path))
+        local = open(local_path).read()
+        h = lambda s: hashlib.sha256(s.strip().encode()).hexdigest()[:16]
+        rows.append([lib.file.path, f"build/dabs/src/{os.path.basename(lib.file.path)}", h(deployed), h(local),
+                     "IDENTICAL" if h(deployed) == h(local) else "DIFFERENT"])
+        blocks.append(f"\n## `build/dabs/src/{os.path.basename(lib.file.path)}`\n\n" + code(deployed, "python"))
+    b = ["This is the transformation code the deployed Lakeflow Spark Declarative Pipeline executes, "
+         f"exported from the workspace via `GET /api/2.0/workspace/export` for pipeline `{PIPELINE_ID}` "
+         "and compared (SHA-256) against the repo copy.\n",
+         "**Deployed pipeline libraries vs. repo**\n\n" +
+         md_table(["deployed workspace file", "repo file", "sha256 deployed", "sha256 repo", "match"], rows) + "\n",
+         "**Pipeline definition (Declarative Automation Bundle)** — `build/dabs/resources/ad_sales_ingestion.pipeline.yml`\n\n" +
+         code(open(os.path.join(repo, "dabs", "resources", "ad_sales_ingestion.pipeline.yml")).read(), "yaml"),
+         "**Bundle root** — `build/dabs/databricks.yml`\n\n" + code(open(os.path.join(repo, "dabs", "databricks.yml")).read(), "yaml"),
+         "\nLayer map: `bronze.py` = 4 streaming tables reading the raw landing tables (`spark.readStream`, ingest timestamp); "
+         "`silver.py` = 4 materialized views with `@dp.expect_all_or_drop` data-quality expectations + dedup on natural keys; "
+         "`gold.py` = `gold_campaign_advertiser` (ad server + CRM + Nielsen joined at campaign grain) and `gold_advertiser_book`; "
+         "`gold_risk.py` = rules-based v0 risk score (superseded by the ML score in stage 3). "
+         "Execution of exactly these flows is shown in [01_lakeflow_ingest.md](01_lakeflow_ingest.md).\n"]
+    b += blocks
+    b.append("\n## Raw landing-data generator — `build/generate_landing_data.py`\n\n"
+             "Produces the four `_raw` tables the bronze layer ingests.\n\n" +
+             code(open(os.path.join(repo, "generate_landing_data.py")).read(), "python"))
+    write("01b_lakeflow_pipeline_source.md", "Stage 1b — Lakeflow pipeline source code (deployed = repo)", "\n".join(b))
+
+
 # ---------------------------------------------------------------- 02 Unity Catalog
 def unity_catalog():
     b = [q(f"""SELECT table_name, table_type, data_source_format, comment FROM {CATALOG}.information_schema.tables
@@ -342,7 +381,7 @@ def one_number():
     write("09_one_number_proof.md", "Integration proof — the same number on every surface", "\n".join(b))
 
 
-STAGES = {"lakeflow": lakeflow, "uc": unity_catalog, "ml": ml, "lakebase": lakebase, "genie": genie,
+STAGES = {"lakeflow": lakeflow, "pipeline_source": pipeline_source, "uc": unity_catalog, "ml": ml, "lakebase": lakebase, "genie": genie,
           "dashboards": dashboards, "app": app, "deal_memory": deal_memory, "one_number": one_number}
 
 if __name__ == "__main__":

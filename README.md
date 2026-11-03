@@ -25,6 +25,19 @@ The hero account, Meridian Retail (062), has $3.59M at risk, 2 of 2 campaigns be
 | AI/BI dashboards | Renewal & Risk (priority grid, risk analytics, model health, delivery risk) + Ad Sales explorers, both linked to the Genie space | `build/rebuild_dashboards_from_ref.py`, `reference/` |
 | **Databricks App** – surface it | FastAPI app `ad-sales-renewal-cockpit`: embedded dashboards, multi-turn Genie panel, Deal Memory search, and an escalation grid with Lakebase write-back | `build/app/` |
 
+## Lakeflow pipeline source (ingest → gold)
+
+The deployed Lakeflow Spark Declarative Pipeline runs exactly these files. Each was exported from the workspace and hash-matched to the repo copy in [`evidence/01b_lakeflow_pipeline_source.md`](evidence/01b_lakeflow_pipeline_source.md), which also inlines the full code.
+
+| Layer | File | What it does |
+|---|---|---|
+| Bronze | [`build/dabs/src/bronze.py`](build/dabs/src/bronze.py) | 4 streaming tables (`@dp.table`, `spark.readStream`) ingesting the raw ad-server, CRM accounts, CRM deals and Nielsen tables, keeping `source_system` and `last_refresh` and stamping `_ingested_at` |
+| Silver | [`build/dabs/src/silver.py`](build/dabs/src/silver.py) | 4 materialized views that dedup on natural keys, conform types, derive pacing/flight-elapsed/reach-delivery, and enforce 12 `@dp.expect_all_or_drop` expectations |
+| Gold | [`build/dabs/src/gold.py`](build/dabs/src/gold.py) | `gold_campaign_advertiser` (ad server rolled up to campaign grain + CRM account/current deal + Nielsen) and `gold_advertiser_book` (advertiser rollup) |
+| Gold risk | [`build/dabs/src/gold_risk.py`](build/dabs/src/gold_risk.py) | Rules-based v0 composite risk (superseded by the ML score in `build/train_models.py`) |
+| Pipeline definition | [`build/dabs/resources/ad_sales_ingestion.pipeline.yml`](build/dabs/resources/ad_sales_ingestion.pipeline.yml) | Serverless, CURRENT channel, deployed with `databricks bundle deploy` |
+| Raw data | [`build/generate_landing_data.py`](build/generate_landing_data.py) | Synthetic source systems the bronze layer reads |
+
 ## Proof it ran
 
 **→ [`evidence/`](evidence/README.md)** contains text-only execution evidence for every stage. It covers the build
@@ -32,7 +45,7 @@ console log, pipeline event log and expectation results, UC lineage, MLflow metr
 reads and writes, Genie answers with their SQL and result rows, the result of every dashboard query, and live HTTP
 responses from the deployed app. It was regenerated from the live workspace by `evidence/capture_evidence.py`.
 
-Deployed resource IDs are in [`DEPLOYED.md`](DEPLOYED.md). The talk track is in [`RUN_OF_SHOW.md`](RUN_OF_SHOW.md).
+Deployed resource IDs are in [`DEPLOYED.md`](DEPLOYED.md). How the AI-assisted build iterated (problem observed → change made) is in [`BUILD_JOURNAL.md`](BUILD_JOURNAL.md). The talk track is in [`RUN_OF_SHOW.md`](RUN_OF_SHOW.md).
 
 ## Reproduce
 
