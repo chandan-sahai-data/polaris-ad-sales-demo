@@ -1,0 +1,2142 @@
+{
+ "datasets": [
+  {
+   "name": "ds_camp",
+   "displayName": "Campaign delivery (drill-through + freshness)",
+   "queryLines": [
+    "SELECT account_owner, advertiser_name AS advertiser, campaign_id, category, campaign_pacing_ratio, delivery_status,        booked_spend, reach_delivery_ratio, in_target_pct, audience_quality_score,        nielsen_is_stale, nielsen_lag_hours, adserver_lag_hours FROM gold_campaign_delivery"
+   ],
+   "catalog": "cs_genie_research_catalog",
+   "schema": "ad_sales"
+  },
+  {
+   "name": "ds_silver_accounts",
+   "displayName": "Silver Accounts",
+   "queryLines": [
+    "SELECT\n",
+    "  advertiser_id,\n",
+    "  advertiser_name,\n",
+    "  category,\n",
+    "  region,\n",
+    "  account_owner,\n",
+    "  source_system,\n",
+    "  last_refresh,\n",
+    "  _ingested_at\n",
+    "FROM\n",
+    "  silver_accounts"
+   ],
+   "catalog": "cs_genie_research_catalog",
+   "schema": "ad_sales"
+  },
+  {
+   "name": "ds_silver_deals",
+   "displayName": "Silver Deals",
+   "queryLines": [
+    "SELECT\n",
+    "  deal_id,\n",
+    "  advertiser_id,\n",
+    "  stage,\n",
+    "  contract_value,\n",
+    "  deal_start,\n",
+    "  deal_end,\n",
+    "  renewal_date,\n",
+    "  upfront_commit_flag,\n",
+    "  renewal_window,\n",
+    "  source_system,\n",
+    "  last_refresh,\n",
+    "  _ingested_at,\n",
+    "  days_to_renewal\n",
+    "FROM\n",
+    "  silver_deals"
+   ],
+   "catalog": "cs_genie_research_catalog",
+   "schema": "ad_sales"
+  },
+  {
+   "name": "ds_silver_nielsen",
+   "displayName": "Silver Nielsen",
+   "queryLines": [
+    "SELECT\n",
+    "  campaign_id,\n",
+    "  advertiser_id,\n",
+    "  target_demo,\n",
+    "  planned_reach,\n",
+    "  delivered_reach,\n",
+    "  reach_delivery_ratio,\n",
+    "  gross_rating_points,\n",
+    "  target_audience_impressions,\n",
+    "  in_target_pct,\n",
+    "  avg_frequency,\n",
+    "  audience_quality_score,\n",
+    "  source_system,\n",
+    "  last_refresh,\n",
+    "  _ingested_at,\n",
+    "  _source_file\n",
+    "FROM\n",
+    "  dash_silver_nielsen"
+   ],
+   "catalog": "cs_genie_research_catalog",
+   "schema": "ad_sales"
+  }
+ ],
+ "pages": [
+  {
+   "name": "silver_accounts",
+   "displayName": "Accounts Explorer",
+   "layout": [
+    {
+     "widget": {
+      "name": "f_category",
+      "queries": [
+       {
+        "name": "dashboards/01f1abe603c91ff7a62a63033e00d32e/datasets/01f1ac9ded231dee917ee950ce91d58c_category",
+        "query": {
+         "datasetName": "ds_silver_accounts",
+         "fields": [
+          {
+           "name": "category",
+           "expression": "`category`"
+          },
+          {
+           "name": "category_associativity",
+           "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "frame": {
+        "showTitle": true,
+        "title": "Category"
+       },
+       "widgetType": "filter-multi-select",
+       "encodings": {
+        "fields": [
+         {
+          "fieldName": "category",
+          "queryName": "dashboards/01f1abe603c91ff7a62a63033e00d32e/datasets/01f1ac9ded231dee917ee950ce91d58c_category"
+         }
+        ]
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 0,
+      "width": 4,
+      "height": 2
+     }
+    },
+    {
+     "widget": {
+      "name": "f_region",
+      "queries": [
+       {
+        "name": "dashboards/01f1abe603c91ff7a62a63033e00d32e/datasets/01f1ac9ded231dee917ee950ce91d58c_region",
+        "query": {
+         "datasetName": "ds_silver_accounts",
+         "fields": [
+          {
+           "name": "region",
+           "expression": "`region`"
+          },
+          {
+           "name": "region_associativity",
+           "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "frame": {
+        "showTitle": true,
+        "title": "Region"
+       },
+       "widgetType": "filter-multi-select",
+       "encodings": {
+        "fields": [
+         {
+          "fieldName": "region",
+          "queryName": "dashboards/01f1abe603c91ff7a62a63033e00d32e/datasets/01f1ac9ded231dee917ee950ce91d58c_region"
+         }
+        ]
+       }
+      }
+     },
+     "position": {
+      "x": 4,
+      "y": 0,
+      "width": 4,
+      "height": 2
+     }
+    },
+    {
+     "widget": {
+      "name": "f_account_owner",
+      "queries": [
+       {
+        "name": "dashboards/01f1abe603c91ff7a62a63033e00d32e/datasets/01f1ac9ded231dee917ee950ce91d58c_account_owner",
+        "query": {
+         "datasetName": "ds_silver_accounts",
+         "fields": [
+          {
+           "name": "account_owner",
+           "expression": "`account_owner`"
+          },
+          {
+           "name": "account_owner_associativity",
+           "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "frame": {
+        "showTitle": true,
+        "title": "Account Owner"
+       },
+       "widgetType": "filter-multi-select",
+       "encodings": {
+        "fields": [
+         {
+          "fieldName": "account_owner",
+          "queryName": "dashboards/01f1abe603c91ff7a62a63033e00d32e/datasets/01f1ac9ded231dee917ee950ce91d58c_account_owner"
+         }
+        ]
+       }
+      }
+     },
+     "position": {
+      "x": 8,
+      "y": 0,
+      "width": 4,
+      "height": 2
+     }
+    },
+    {
+     "widget": {
+      "name": "bar_category",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_silver_accounts",
+         "fields": [
+          {
+           "name": "category",
+           "expression": "`category`"
+          },
+          {
+           "name": "countdistinct(advertiser_id)",
+           "expression": "COUNT(DISTINCT `advertiser_id`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "frame": {
+        "showTitle": true,
+        "title": "Advertisers by Category"
+       },
+       "version": 3,
+       "widgetType": "bar",
+       "encodings": {
+        "x": {
+         "fieldName": "category",
+         "displayName": "category",
+         "scale": {
+          "type": "categorical"
+         }
+        },
+        "y": {
+         "fieldName": "countdistinct(advertiser_id)",
+         "displayName": "advertiser_id",
+         "scale": {
+          "type": "quantitative"
+         }
+        },
+        "color": {
+         "fieldName": "category",
+         "displayName": "category",
+         "scale": {
+          "type": "categorical"
+         }
+        }
+       },
+       "data": {
+        "queryName": "main_query"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 2,
+      "width": 6,
+      "height": 6
+     }
+    },
+    {
+     "widget": {
+      "name": "bar_region",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_silver_accounts",
+         "fields": [
+          {
+           "name": "region",
+           "expression": "`region`"
+          },
+          {
+           "name": "countdistinct(advertiser_id)",
+           "expression": "COUNT(DISTINCT `advertiser_id`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "frame": {
+        "showTitle": true,
+        "title": "Advertisers by Region"
+       },
+       "version": 3,
+       "widgetType": "bar",
+       "encodings": {
+        "x": {
+         "fieldName": "region",
+         "displayName": "region",
+         "scale": {
+          "type": "categorical"
+         }
+        },
+        "y": {
+         "fieldName": "countdistinct(advertiser_id)",
+         "displayName": "advertiser_id",
+         "scale": {
+          "type": "quantitative"
+         }
+        },
+        "color": {
+         "fieldName": "region",
+         "displayName": "region",
+         "scale": {
+          "type": "categorical"
+         }
+        }
+       },
+       "data": {
+        "queryName": "main_query"
+       }
+      }
+     },
+     "position": {
+      "x": 6,
+      "y": 2,
+      "width": 6,
+      "height": 6
+     }
+    },
+    {
+     "widget": {
+      "name": "kpi_total_accounts",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_silver_accounts",
+         "fields": [
+          {
+           "name": "countdistinct(advertiser_id)",
+           "expression": "COUNT(DISTINCT `advertiser_id`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "frame": {
+        "showTitle": true,
+        "title": "Total Accounts"
+       },
+       "version": 2,
+       "widgetType": "counter",
+       "encodings": {
+        "value": {
+         "fieldName": "countdistinct(advertiser_id)",
+         "rowNumber": 0
+        }
+       },
+       "data": {
+        "queryName": "main_query"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 8,
+      "width": 3,
+      "height": 3
+     }
+    },
+    {
+     "widget": {
+      "name": "tbl_accounts",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_silver_accounts",
+         "fields": [
+          {
+           "name": "advertiser_id",
+           "expression": "`advertiser_id`"
+          },
+          {
+           "name": "advertiser_name",
+           "expression": "`advertiser_name`"
+          },
+          {
+           "name": "category",
+           "expression": "`category`"
+          },
+          {
+           "name": "region",
+           "expression": "`region`"
+          },
+          {
+           "name": "account_owner",
+           "expression": "`account_owner`"
+          },
+          {
+           "name": "source_system",
+           "expression": "`source_system`"
+          },
+          {
+           "name": "last_refresh",
+           "expression": "`last_refresh`"
+          },
+          {
+           "name": "_ingested_at",
+           "expression": "`_ingested_at`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "frame": {
+        "showTitle": true,
+        "title": "All Accounts"
+       },
+       "version": 2,
+       "widgetType": "table",
+       "encodings": {
+        "columns": [
+         {
+          "fieldName": "advertiser_id"
+         },
+         {
+          "fieldName": "advertiser_name"
+         },
+         {
+          "fieldName": "category"
+         },
+         {
+          "fieldName": "region"
+         },
+         {
+          "fieldName": "account_owner"
+         },
+         {
+          "fieldName": "source_system"
+         },
+         {
+          "fieldName": "last_refresh"
+         },
+         {
+          "fieldName": "_ingested_at"
+         }
+        ]
+       },
+       "data": {
+        "queryName": "main_query"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 11,
+      "width": 12,
+      "height": 6
+     }
+    }
+   ],
+   "pageType": "PAGE_TYPE_CANVAS",
+   "layoutVersion": "GRID_V1"
+  },
+  {
+   "name": "silver_deals",
+   "displayName": "Deals Explorer",
+   "layout": [
+    {
+     "widget": {
+      "name": "f_stage",
+      "queries": [
+       {
+        "name": "dashboards/01f1abe603c91ff7a62a63033e00d32e/datasets/01f1ac9ded461ff7aba10b498b067215_stage",
+        "query": {
+         "datasetName": "ds_silver_deals",
+         "fields": [
+          {
+           "name": "stage",
+           "expression": "`stage`"
+          },
+          {
+           "name": "stage_associativity",
+           "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "frame": {
+        "showTitle": true,
+        "title": "Stage"
+       },
+       "widgetType": "filter-multi-select",
+       "encodings": {
+        "fields": [
+         {
+          "fieldName": "stage",
+          "queryName": "dashboards/01f1abe603c91ff7a62a63033e00d32e/datasets/01f1ac9ded461ff7aba10b498b067215_stage"
+         }
+        ]
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 0,
+      "width": 3,
+      "height": 2
+     }
+    },
+    {
+     "widget": {
+      "name": "f_renewal_window",
+      "queries": [
+       {
+        "name": "dashboards/01f1abe603c91ff7a62a63033e00d32e/datasets/01f1ac9ded461ff7aba10b498b067215_renewal_window",
+        "query": {
+         "datasetName": "ds_silver_deals",
+         "fields": [
+          {
+           "name": "renewal_window",
+           "expression": "`renewal_window`"
+          },
+          {
+           "name": "renewal_window_associativity",
+           "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "frame": {
+        "showTitle": true,
+        "title": "Renewal Window"
+       },
+       "widgetType": "filter-multi-select",
+       "encodings": {
+        "fields": [
+         {
+          "fieldName": "renewal_window",
+          "queryName": "dashboards/01f1abe603c91ff7a62a63033e00d32e/datasets/01f1ac9ded461ff7aba10b498b067215_renewal_window"
+         }
+        ]
+       }
+      }
+     },
+     "position": {
+      "x": 3,
+      "y": 0,
+      "width": 3,
+      "height": 2
+     }
+    },
+    {
+     "widget": {
+      "name": "f_upfront",
+      "queries": [
+       {
+        "name": "dashboards/01f1abe603c91ff7a62a63033e00d32e/datasets/01f1ac9ded461ff7aba10b498b067215_upfront_commit_flag",
+        "query": {
+         "datasetName": "ds_silver_deals",
+         "fields": [
+          {
+           "name": "upfront_commit_flag",
+           "expression": "`upfront_commit_flag`"
+          },
+          {
+           "name": "upfront_commit_flag_associativity",
+           "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "frame": {
+        "showTitle": true,
+        "title": "Upfront Commit"
+       },
+       "widgetType": "filter-single-select",
+       "encodings": {
+        "fields": [
+         {
+          "fieldName": "upfront_commit_flag",
+          "queryName": "dashboards/01f1abe603c91ff7a62a63033e00d32e/datasets/01f1ac9ded461ff7aba10b498b067215_upfront_commit_flag"
+         }
+        ]
+       }
+      }
+     },
+     "position": {
+      "x": 6,
+      "y": 0,
+      "width": 3,
+      "height": 2
+     }
+    },
+    {
+     "widget": {
+      "name": "f_advertiser",
+      "queries": [
+       {
+        "name": "dashboards/01f1abe603c91ff7a62a63033e00d32e/datasets/01f1ac9ded461ff7aba10b498b067215_advertiser_id",
+        "query": {
+         "datasetName": "ds_silver_deals",
+         "fields": [
+          {
+           "name": "advertiser_name",
+           "expression": "`advertiser_name`"
+          },
+          {
+           "name": "advertiser_id_associativity",
+           "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "frame": {
+        "showTitle": true,
+        "title": "Advertiser"
+       },
+       "widgetType": "filter-multi-select",
+       "encodings": {
+        "fields": [
+         {
+          "fieldName": "advertiser_name",
+          "queryName": "dashboards/01f1abe603c91ff7a62a63033e00d32e/datasets/01f1ac9ded461ff7aba10b498b067215_advertiser_id"
+         }
+        ]
+       }
+      }
+     },
+     "position": {
+      "x": 9,
+      "y": 0,
+      "width": 3,
+      "height": 2
+     }
+    },
+    {
+     "widget": {
+      "name": "bar_stage_value",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_silver_deals",
+         "fields": [
+          {
+           "name": "stage",
+           "expression": "`stage`"
+          },
+          {
+           "name": "sum(contract_value)",
+           "expression": "SUM(`contract_value`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "frame": {
+        "showTitle": true,
+        "title": "Contract Value by Stage"
+       },
+       "version": 3,
+       "widgetType": "bar",
+       "encodings": {
+        "x": {
+         "fieldName": "stage",
+         "displayName": "stage",
+         "scale": {
+          "type": "categorical"
+         }
+        },
+        "y": {
+         "fieldName": "sum(contract_value)",
+         "displayName": "contract_value",
+         "scale": {
+          "type": "quantitative"
+         },
+         "format": {
+          "type": "number-currency",
+          "currencyCode": "USD",
+          "abbreviation": "none",
+          "hideGroupSeparator": false,
+          "decimalPlaces": {
+           "type": "exact",
+           "places": 0
+          }
+         }
+        },
+        "color": {
+         "fieldName": "stage",
+         "displayName": "stage",
+         "scale": {
+          "type": "categorical"
+         }
+        }
+       },
+       "data": {
+        "queryName": "main_query"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 2,
+      "width": 6,
+      "height": 6
+     }
+    },
+    {
+     "widget": {
+      "name": "bar_renewal_count",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_silver_deals",
+         "fields": [
+          {
+           "name": "renewal_window",
+           "expression": "`renewal_window`"
+          },
+          {
+           "name": "countdistinct(deal_id)",
+           "expression": "COUNT(DISTINCT `deal_id`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "frame": {
+        "showTitle": true,
+        "title": "Deals by Renewal Window"
+       },
+       "version": 3,
+       "widgetType": "bar",
+       "encodings": {
+        "x": {
+         "fieldName": "renewal_window",
+         "displayName": "renewal_window",
+         "scale": {
+          "type": "categorical"
+         }
+        },
+        "y": {
+         "fieldName": "countdistinct(deal_id)",
+         "displayName": "deal_id",
+         "scale": {
+          "type": "quantitative"
+         }
+        },
+        "color": {
+         "fieldName": "renewal_window",
+         "displayName": "renewal_window",
+         "scale": {
+          "type": "categorical"
+         }
+        }
+       },
+       "data": {
+        "queryName": "main_query"
+       }
+      }
+     },
+     "position": {
+      "x": 6,
+      "y": 2,
+      "width": 6,
+      "height": 6
+     }
+    },
+    {
+     "widget": {
+      "name": "kpi_total_value",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_silver_deals",
+         "fields": [
+          {
+           "name": "sum(contract_value)",
+           "expression": "SUM(`contract_value`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "frame": {
+        "showTitle": true,
+        "title": "Total Contract Value"
+       },
+       "version": 2,
+       "widgetType": "counter",
+       "encodings": {
+        "value": {
+         "fieldName": "sum(contract_value)",
+         "rowNumber": 0,
+         "format": {
+          "type": "number-currency",
+          "currencyCode": "USD",
+          "abbreviation": "compact",
+          "hideGroupSeparator": false,
+          "decimalPlaces": {
+           "type": "exact",
+           "places": 1
+          }
+         }
+        }
+       },
+       "data": {
+        "queryName": "main_query"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 8,
+      "width": 6,
+      "height": 3
+     }
+    },
+    {
+     "widget": {
+      "name": "kpi_num_deals",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_silver_deals",
+         "fields": [
+          {
+           "name": "countdistinct(deal_id)",
+           "expression": "COUNT(DISTINCT `deal_id`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "frame": {
+        "showTitle": true,
+        "title": "Number of Deals"
+       },
+       "version": 2,
+       "widgetType": "counter",
+       "encodings": {
+        "value": {
+         "fieldName": "countdistinct(deal_id)",
+         "rowNumber": 0
+        }
+       },
+       "data": {
+        "queryName": "main_query"
+       }
+      }
+     },
+     "position": {
+      "x": 6,
+      "y": 8,
+      "width": 6,
+      "height": 3
+     }
+    },
+    {
+     "widget": {
+      "name": "tbl_deals",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_silver_deals",
+         "fields": [
+          {
+           "name": "deal_id",
+           "expression": "`deal_id`"
+          },
+          {
+           "name": "advertiser_id",
+           "expression": "`advertiser_id`"
+          },
+          {
+           "name": "stage",
+           "expression": "`stage`"
+          },
+          {
+           "name": "contract_value",
+           "expression": "`contract_value`"
+          },
+          {
+           "name": "deal_start",
+           "expression": "`deal_start`"
+          },
+          {
+           "name": "deal_end",
+           "expression": "`deal_end`"
+          },
+          {
+           "name": "renewal_date",
+           "expression": "`renewal_date`"
+          },
+          {
+           "name": "upfront_commit_flag",
+           "expression": "`upfront_commit_flag`"
+          },
+          {
+           "name": "renewal_window",
+           "expression": "`renewal_window`"
+          },
+          {
+           "name": "source_system",
+           "expression": "`source_system`"
+          },
+          {
+           "name": "last_refresh",
+           "expression": "`last_refresh`"
+          },
+          {
+           "name": "_ingested_at",
+           "expression": "`_ingested_at`"
+          },
+          {
+           "name": "days_to_renewal",
+           "expression": "`days_to_renewal`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "frame": {
+        "showTitle": true,
+        "title": "All Deals"
+       },
+       "version": 2,
+       "widgetType": "table",
+       "encodings": {
+        "columns": [
+         {
+          "fieldName": "deal_id"
+         },
+         {
+          "fieldName": "advertiser_id"
+         },
+         {
+          "fieldName": "stage"
+         },
+         {
+          "fieldName": "contract_value",
+          "format": {
+           "type": "number-currency",
+           "currencyCode": "USD",
+           "abbreviation": "none",
+           "hideGroupSeparator": false,
+           "decimalPlaces": {
+            "type": "exact",
+            "places": 0
+           }
+          }
+         },
+         {
+          "fieldName": "deal_start"
+         },
+         {
+          "fieldName": "deal_end"
+         },
+         {
+          "fieldName": "renewal_date"
+         },
+         {
+          "fieldName": "upfront_commit_flag"
+         },
+         {
+          "fieldName": "renewal_window"
+         },
+         {
+          "fieldName": "source_system"
+         },
+         {
+          "fieldName": "last_refresh"
+         },
+         {
+          "fieldName": "_ingested_at"
+         },
+         {
+          "fieldName": "days_to_renewal"
+         }
+        ]
+       },
+       "data": {
+        "queryName": "main_query"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 11,
+      "width": 12,
+      "height": 6
+     }
+    }
+   ],
+   "pageType": "PAGE_TYPE_CANVAS",
+   "layoutVersion": "GRID_V1"
+  },
+  {
+   "name": "silver_nielsen",
+   "displayName": "Nielsen Explorer",
+   "layout": [
+    {
+     "widget": {
+      "name": "f_target_demo",
+      "queries": [
+       {
+        "name": "dashboards/01f1abe603c91ff7a62a63033e00d32e/datasets/01f1ac9ded6d1648899af00be2384ed9_target_demo",
+        "query": {
+         "datasetName": "ds_silver_nielsen",
+         "fields": [
+          {
+           "name": "target_demo",
+           "expression": "`target_demo`"
+          },
+          {
+           "name": "target_demo_associativity",
+           "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "frame": {
+        "showTitle": true,
+        "title": "Target Demo"
+       },
+       "widgetType": "filter-multi-select",
+       "encodings": {
+        "fields": [
+         {
+          "fieldName": "target_demo",
+          "queryName": "dashboards/01f1abe603c91ff7a62a63033e00d32e/datasets/01f1ac9ded6d1648899af00be2384ed9_target_demo"
+         }
+        ]
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 0,
+      "width": 4,
+      "height": 2
+     }
+    },
+    {
+     "widget": {
+      "name": "f_source_system",
+      "queries": [
+       {
+        "name": "dashboards/01f1abe603c91ff7a62a63033e00d32e/datasets/01f1ac9ded6d1648899af00be2384ed9_source_system",
+        "query": {
+         "datasetName": "ds_silver_nielsen",
+         "fields": [
+          {
+           "name": "source_system",
+           "expression": "`source_system`"
+          },
+          {
+           "name": "source_system_associativity",
+           "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "frame": {
+        "showTitle": true,
+        "title": "Source System"
+       },
+       "widgetType": "filter-multi-select",
+       "encodings": {
+        "fields": [
+         {
+          "fieldName": "source_system",
+          "queryName": "dashboards/01f1abe603c91ff7a62a63033e00d32e/datasets/01f1ac9ded6d1648899af00be2384ed9_source_system"
+         }
+        ]
+       }
+      }
+     },
+     "position": {
+      "x": 4,
+      "y": 0,
+      "width": 4,
+      "height": 2
+     }
+    },
+    {
+     "widget": {
+      "name": "f_advertiser",
+      "queries": [
+       {
+        "name": "dashboards/01f1abe603c91ff7a62a63033e00d32e/datasets/01f1ac9ded6d1648899af00be2384ed9_advertiser_id",
+        "query": {
+         "datasetName": "ds_silver_nielsen",
+         "fields": [
+          {
+           "name": "advertiser_id",
+           "expression": "`advertiser_id`"
+          },
+          {
+           "name": "advertiser_id_associativity",
+           "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "frame": {
+        "showTitle": true,
+        "title": "Advertiser ID"
+       },
+       "widgetType": "filter-multi-select",
+       "encodings": {
+        "fields": [
+         {
+          "fieldName": "advertiser_id",
+          "queryName": "dashboards/01f1abe603c91ff7a62a63033e00d32e/datasets/01f1ac9ded6d1648899af00be2384ed9_advertiser_id"
+         }
+        ]
+       }
+      }
+     },
+     "position": {
+      "x": 8,
+      "y": 0,
+      "width": 4,
+      "height": 2
+     }
+    },
+    {
+     "widget": {
+      "name": "bar_quality",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_silver_nielsen",
+         "fields": [
+          {
+           "name": "target_demo",
+           "expression": "`target_demo`"
+          },
+          {
+           "name": "avg(audience_quality_score)",
+           "expression": "AVG(`audience_quality_score`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "frame": {
+        "showTitle": true,
+        "title": "Avg Audience Quality by Target Demo"
+       },
+       "version": 3,
+       "widgetType": "bar",
+       "encodings": {
+        "x": {
+         "fieldName": "target_demo",
+         "displayName": "target_demo",
+         "scale": {
+          "type": "categorical"
+         }
+        },
+        "y": {
+         "fieldName": "avg(audience_quality_score)",
+         "displayName": "audience_quality_score",
+         "scale": {
+          "type": "quantitative"
+         }
+        },
+        "color": {
+         "fieldName": "target_demo",
+         "displayName": "target_demo",
+         "scale": {
+          "type": "categorical"
+         }
+        }
+       },
+       "data": {
+        "queryName": "main_query"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 2,
+      "width": 6,
+      "height": 6
+     }
+    },
+    {
+     "widget": {
+      "name": "bar_delivered",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_silver_nielsen",
+         "fields": [
+          {
+           "name": "target_demo",
+           "expression": "`target_demo`"
+          },
+          {
+           "name": "sum(delivered_reach)",
+           "expression": "SUM(`delivered_reach`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "frame": {
+        "showTitle": true,
+        "title": "Delivered Reach by Target Demo"
+       },
+       "version": 3,
+       "widgetType": "bar",
+       "encodings": {
+        "x": {
+         "fieldName": "target_demo",
+         "displayName": "target_demo",
+         "scale": {
+          "type": "categorical"
+         }
+        },
+        "y": {
+         "fieldName": "sum(delivered_reach)",
+         "displayName": "delivered_reach",
+         "scale": {
+          "type": "quantitative"
+         }
+        },
+        "color": {
+         "fieldName": "target_demo",
+         "displayName": "target_demo",
+         "scale": {
+          "type": "categorical"
+         }
+        }
+       },
+       "data": {
+        "queryName": "main_query"
+       }
+      }
+     },
+     "position": {
+      "x": 6,
+      "y": 2,
+      "width": 6,
+      "height": 6
+     }
+    },
+    {
+     "widget": {
+      "name": "kpi_reach_ratio",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_silver_nielsen",
+         "fields": [
+          {
+           "name": "avg(reach_delivery_ratio)",
+           "expression": "AVG(`reach_delivery_ratio`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "frame": {
+        "showTitle": true,
+        "title": "Avg Reach Delivery Ratio"
+       },
+       "version": 2,
+       "widgetType": "counter",
+       "encodings": {
+        "value": {
+         "fieldName": "avg(reach_delivery_ratio)",
+         "rowNumber": 0,
+         "format": {
+          "type": "number",
+          "hideGroupSeparator": false,
+          "decimalPlaces": {
+           "type": "exact",
+           "places": 2
+          }
+         }
+        }
+       },
+       "data": {
+        "queryName": "main_query"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 8,
+      "width": 6,
+      "height": 3
+     }
+    },
+    {
+     "widget": {
+      "name": "kpi_impressions",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_silver_nielsen",
+         "fields": [
+          {
+           "name": "sum(target_audience_impressions)",
+           "expression": "SUM(`target_audience_impressions`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "frame": {
+        "showTitle": true,
+        "title": "Total Target Audience Impressions"
+       },
+       "version": 2,
+       "widgetType": "counter",
+       "encodings": {
+        "value": {
+         "fieldName": "sum(target_audience_impressions)",
+         "rowNumber": 0
+        }
+       },
+       "data": {
+        "queryName": "main_query"
+       }
+      }
+     },
+     "position": {
+      "x": 6,
+      "y": 8,
+      "width": 6,
+      "height": 3
+     }
+    },
+    {
+     "widget": {
+      "name": "tbl_nielsen",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_silver_nielsen",
+         "fields": [
+          {
+           "name": "campaign_id",
+           "expression": "`campaign_id`"
+          },
+          {
+           "name": "advertiser_id",
+           "expression": "`advertiser_id`"
+          },
+          {
+           "name": "target_demo",
+           "expression": "`target_demo`"
+          },
+          {
+           "name": "planned_reach",
+           "expression": "`planned_reach`"
+          },
+          {
+           "name": "delivered_reach",
+           "expression": "`delivered_reach`"
+          },
+          {
+           "name": "reach_delivery_ratio",
+           "expression": "`reach_delivery_ratio`"
+          },
+          {
+           "name": "gross_rating_points",
+           "expression": "`gross_rating_points`"
+          },
+          {
+           "name": "target_audience_impressions",
+           "expression": "`target_audience_impressions`"
+          },
+          {
+           "name": "in_target_pct",
+           "expression": "`in_target_pct`"
+          },
+          {
+           "name": "avg_frequency",
+           "expression": "`avg_frequency`"
+          },
+          {
+           "name": "audience_quality_score",
+           "expression": "`audience_quality_score`"
+          },
+          {
+           "name": "source_system",
+           "expression": "`source_system`"
+          },
+          {
+           "name": "last_refresh",
+           "expression": "`last_refresh`"
+          },
+          {
+           "name": "_ingested_at",
+           "expression": "`_ingested_at`"
+          },
+          {
+           "name": "_source_file",
+           "expression": "`_source_file`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "frame": {
+        "showTitle": true,
+        "title": "All Nielsen Data"
+       },
+       "version": 2,
+       "widgetType": "table",
+       "encodings": {
+        "columns": [
+         {
+          "fieldName": "campaign_id"
+         },
+         {
+          "fieldName": "advertiser_id"
+         },
+         {
+          "fieldName": "target_demo"
+         },
+         {
+          "fieldName": "planned_reach"
+         },
+         {
+          "fieldName": "delivered_reach"
+         },
+         {
+          "fieldName": "reach_delivery_ratio",
+          "format": {
+           "type": "number",
+           "hideGroupSeparator": false,
+           "decimalPlaces": {
+            "type": "exact",
+            "places": 2
+           }
+          }
+         },
+         {
+          "fieldName": "gross_rating_points"
+         },
+         {
+          "fieldName": "target_audience_impressions"
+         },
+         {
+          "fieldName": "in_target_pct"
+         },
+         {
+          "fieldName": "avg_frequency"
+         },
+         {
+          "fieldName": "audience_quality_score"
+         },
+         {
+          "fieldName": "source_system"
+         },
+         {
+          "fieldName": "last_refresh"
+         },
+         {
+          "fieldName": "_ingested_at"
+         },
+         {
+          "fieldName": "_source_file"
+         }
+        ]
+       },
+       "data": {
+        "queryName": "main_query"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 11,
+      "width": 12,
+      "height": 6
+     }
+    }
+   ],
+   "pageType": "PAGE_TYPE_CANVAS",
+   "layoutVersion": "GRID_V1"
+  },
+  {
+   "name": "ad_server_details",
+   "displayName": "Ad Server Details",
+   "layout": [
+    {
+     "widget": {
+      "name": "header",
+      "multilineTextboxSpec": {
+       "lines": [
+        "# Ad Server Campaign Delivery\n",
+        "Real-time campaign pacing, delivery status, and ad server freshness metrics"
+       ]
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 0,
+      "width": 8,
+      "height": 2
+     }
+    },
+    {
+     "widget": {
+      "name": "kpi_campaigns",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_camp",
+         "fields": [
+          {
+           "name": "countdistinct(campaign_id)",
+           "expression": "COUNT(DISTINCT `campaign_id`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "frame": {
+        "showTitle": true,
+        "title": "Total Campaigns"
+       },
+       "version": 2,
+       "widgetType": "counter",
+       "encodings": {
+        "value": {
+         "fieldName": "countdistinct(campaign_id)",
+         "rowNumber": 0
+        }
+       },
+       "data": {
+        "queryName": "main_query"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 2,
+      "width": 3,
+      "height": 3
+     }
+    },
+    {
+     "widget": {
+      "name": "kpi_pacing",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_camp",
+         "fields": [
+          {
+           "name": "avg(campaign_pacing_ratio)",
+           "expression": "AVG(`campaign_pacing_ratio`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "frame": {
+        "showTitle": true,
+        "title": "Avg Campaign Pacing"
+       },
+       "version": 2,
+       "widgetType": "counter",
+       "encodings": {
+        "value": {
+         "fieldName": "avg(campaign_pacing_ratio)",
+         "rowNumber": 0
+        }
+       },
+       "data": {
+        "queryName": "main_query"
+       }
+      }
+     },
+     "position": {
+      "x": 3,
+      "y": 2,
+      "width": 3,
+      "height": 3
+     }
+    },
+    {
+     "widget": {
+      "name": "kpi_spend",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_camp",
+         "fields": [
+          {
+           "name": "sum(booked_spend)",
+           "expression": "SUM(`booked_spend`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "frame": {
+        "showTitle": true,
+        "title": "Total Booked Spend"
+       },
+       "version": 2,
+       "widgetType": "counter",
+       "encodings": {
+        "value": {
+         "fieldName": "sum(booked_spend)",
+         "rowNumber": 0,
+         "format": {
+          "type": "number-currency",
+          "currencyCode": "USD",
+          "abbreviation": "compact",
+          "hideGroupSeparator": false,
+          "decimalPlaces": {
+           "type": "exact",
+           "places": 1
+          }
+         }
+        }
+       },
+       "data": {
+        "queryName": "main_query"
+       }
+      }
+     },
+     "position": {
+      "x": 6,
+      "y": 2,
+      "width": 3,
+      "height": 3
+     }
+    },
+    {
+     "widget": {
+      "name": "kpi_quality",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_camp",
+         "fields": [
+          {
+           "name": "avg(audience_quality_score)",
+           "expression": "AVG(`audience_quality_score`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "frame": {
+        "showTitle": true,
+        "title": "Avg Audience Quality"
+       },
+       "version": 2,
+       "widgetType": "counter",
+       "encodings": {
+        "value": {
+         "fieldName": "avg(audience_quality_score)",
+         "rowNumber": 0
+        }
+       },
+       "data": {
+        "queryName": "main_query"
+       }
+      }
+     },
+     "position": {
+      "x": 9,
+      "y": 2,
+      "width": 3,
+      "height": 3
+     }
+    },
+    {
+     "widget": {
+      "name": "bar_delivery_status",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_camp",
+         "fields": [
+          {
+           "name": "delivery_status",
+           "expression": "`delivery_status`"
+          },
+          {
+           "name": "countdistinct(campaign_id)",
+           "expression": "COUNT(DISTINCT `campaign_id`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "frame": {
+        "showTitle": true,
+        "title": "Campaigns by Delivery Status"
+       },
+       "version": 3,
+       "widgetType": "bar",
+       "encodings": {
+        "x": {
+         "fieldName": "delivery_status",
+         "displayName": "delivery_status",
+         "scale": {
+          "type": "categorical"
+         }
+        },
+        "y": {
+         "fieldName": "countdistinct(campaign_id)",
+         "displayName": "campaign_id",
+         "scale": {
+          "type": "quantitative"
+         }
+        },
+        "color": {
+         "fieldName": "delivery_status",
+         "displayName": "delivery_status",
+         "scale": {
+          "type": "categorical"
+         }
+        }
+       },
+       "data": {
+        "queryName": "main_query"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 5,
+      "width": 6,
+      "height": 6
+     }
+    },
+    {
+     "widget": {
+      "name": "bar_category",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_camp",
+         "fields": [
+          {
+           "name": "category",
+           "expression": "`category`"
+          },
+          {
+           "name": "sum(booked_spend)",
+           "expression": "SUM(`booked_spend`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "frame": {
+        "showTitle": true,
+        "title": "Total Spend by Category"
+       },
+       "version": 3,
+       "widgetType": "bar",
+       "encodings": {
+        "x": {
+         "fieldName": "category",
+         "displayName": "category",
+         "scale": {
+          "type": "categorical"
+         }
+        },
+        "y": {
+         "fieldName": "sum(booked_spend)",
+         "displayName": "booked_spend",
+         "scale": {
+          "type": "quantitative"
+         },
+         "format": {
+          "type": "number-currency",
+          "currencyCode": "USD",
+          "abbreviation": "none",
+          "hideGroupSeparator": false,
+          "decimalPlaces": {
+           "type": "exact",
+           "places": 0
+          }
+         }
+        },
+        "color": {
+         "fieldName": "category",
+         "displayName": "category",
+         "scale": {
+          "type": "categorical"
+         }
+        }
+       },
+       "data": {
+        "queryName": "main_query"
+       }
+      }
+     },
+     "position": {
+      "x": 6,
+      "y": 5,
+      "width": 6,
+      "height": 6
+     }
+    },
+    {
+     "widget": {
+      "name": "tbl_campaigns",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_camp",
+         "fields": [
+          {
+           "name": "advertiser",
+           "expression": "`advertiser`"
+          },
+          {
+           "name": "campaign_id",
+           "expression": "`campaign_id`"
+          },
+          {
+           "name": "delivery_status",
+           "expression": "`delivery_status`"
+          },
+          {
+           "name": "campaign_pacing_ratio",
+           "expression": "`campaign_pacing_ratio`"
+          },
+          {
+           "name": "booked_spend",
+           "expression": "`booked_spend`"
+          },
+          {
+           "name": "reach_delivery_ratio",
+           "expression": "`reach_delivery_ratio`"
+          },
+          {
+           "name": "in_target_pct",
+           "expression": "`in_target_pct`"
+          },
+          {
+           "name": "audience_quality_score",
+           "expression": "`audience_quality_score`"
+          },
+          {
+           "name": "nielsen_is_stale",
+           "expression": "`nielsen_is_stale`"
+          },
+          {
+           "name": "nielsen_lag_hours",
+           "expression": "`nielsen_lag_hours`"
+          },
+          {
+           "name": "adserver_lag_hours",
+           "expression": "`adserver_lag_hours`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "frame": {
+        "showTitle": true,
+        "title": "Campaign Performance Details"
+       },
+       "version": 2,
+       "widgetType": "table",
+       "encodings": {
+        "columns": [
+         {
+          "fieldName": "advertiser"
+         },
+         {
+          "fieldName": "campaign_id"
+         },
+         {
+          "fieldName": "delivery_status"
+         },
+         {
+          "fieldName": "campaign_pacing_ratio"
+         },
+         {
+          "fieldName": "booked_spend",
+          "format": {
+           "type": "number-currency",
+           "currencyCode": "USD",
+           "abbreviation": "none",
+           "hideGroupSeparator": false,
+           "decimalPlaces": {
+            "type": "exact",
+            "places": 0
+           }
+          }
+         },
+         {
+          "fieldName": "reach_delivery_ratio",
+          "format": {
+           "type": "number",
+           "hideGroupSeparator": false,
+           "decimalPlaces": {
+            "type": "exact",
+            "places": 2
+           }
+          }
+         },
+         {
+          "fieldName": "in_target_pct"
+         },
+         {
+          "fieldName": "audience_quality_score"
+         },
+         {
+          "fieldName": "nielsen_is_stale"
+         },
+         {
+          "fieldName": "nielsen_lag_hours"
+         },
+         {
+          "fieldName": "adserver_lag_hours"
+         }
+        ]
+       },
+       "data": {
+        "queryName": "main_query"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 11,
+      "width": 12,
+      "height": 7
+     }
+    },
+    {
+     "widget": {
+      "name": "f_adserver_advertiser",
+      "queries": [
+       {
+        "name": "f_adserver_advertiser_q",
+        "query": {
+         "datasetName": "ds_camp",
+         "fields": [
+          {
+           "name": "advertiser",
+           "expression": "`advertiser`"
+          },
+          {
+           "name": "advertiser_associativity",
+           "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "filter-multi-select",
+       "frame": {
+        "showTitle": true,
+        "title": "Advertiser"
+       },
+       "encodings": {
+        "fields": [
+         {
+          "fieldName": "advertiser",
+          "queryName": "f_adserver_advertiser_q"
+         }
+        ]
+       }
+      }
+     },
+     "position": {
+      "x": 8,
+      "y": 0,
+      "width": 4,
+      "height": 2
+     }
+    }
+   ],
+   "pageType": "PAGE_TYPE_CANVAS",
+   "layoutVersion": "GRID_V1"
+  }
+ ],
+ "uiSettings": {
+  "locale": "en-US",
+  "theme": {
+   "canvasBackgroundColor": {
+    "light": "#08080B",
+    "dark": "#08080B"
+   },
+   "widgetBackgroundColor": {
+    "light": "#12131A",
+    "dark": "#12131A"
+   },
+   "widgetBorderColor": {
+    "light": "#23242E",
+    "dark": "#23242E"
+   },
+   "fontColor": {
+    "light": "#F5F6FA",
+    "dark": "#F5F6FA"
+   },
+   "selectionColor": {
+    "light": "#2F6BFF",
+    "dark": "#2F6BFF"
+   },
+   "visualizationColors": [
+    "#2F6BFF",
+    "#5AA0FF",
+    "#8ACAFF",
+    "#FFB020",
+    "#FF7054",
+    "#FF3B3B",
+    "#33C27F"
+   ],
+   "widgetHeaderAlignment": "LEFT",
+   "fontFamily": "Inter",
+   "widgetCornerRadius": 8
+  },
+  "genieSpace": {
+   "isEnabled": true,
+   "overrideId": "01f1c80529421edaa5212423f9c65124",
+   "enablementMode": "ENABLED"
+  },
+  "applyModeEnabled": false
+ }
+}

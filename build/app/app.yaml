@@ -1,0 +1,23 @@
+command:
+  - python
+  - app.py
+# FRESH BUILD: fill every <PLACEHOLDER> with the new workspace's values before deploying.
+env:
+  - name: WORKSPACE_ID
+    value: "7474655804120295"        # numeric o= id
+  - name: GENIE_SPACE_ID
+    value: "01f1c80529421edaa5212423f9c65124"        # from step 6
+  - name: LAKEBASE_ENDPOINT
+    value: "projects/renewal-actions/branches/production/endpoints/primary"  # from step 5
+  - name: WAREHOUSE_ID
+    value: "69a77ede4fa03b41"
+  - name: EMBED_ENDPOINT
+    value: "databricks-bge-large-en"
+  - name: FQ
+    value: "cs_genie_research_catalog.ad_sales"
+  - name: DASHBOARD_ID_AS
+    value: "01f1c805651b10ad9a2ffccdcc8219f0"       # from step 7
+  - name: DASHBOARD_ID_RR
+    value: "01f1c805646d10c7bc4b13e6270abd37"       # from step 7
+  - name: RISK_TABLE
+    value: "ad_sales.lb_advertiser_risk_scores"   # synced table in Lakebase (no CREATE CATALOG here -> synced into the standard catalog)

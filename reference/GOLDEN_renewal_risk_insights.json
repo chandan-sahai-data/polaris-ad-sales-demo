@@ -1,0 +1,1945 @@
+{
+ "datasets": [
+  {
+   "name": "ds_adv",
+   "displayName": "Advertiser renewal (metric view)",
+   "queryLines": [
+    "SELECT `Advertiser` AS advertiser, `Category` AS category, `Region` AS region, `Risk Tier` AS risk_tier,        `Renewal Window` AS renewal_window, `Days to Renewal` AS days_to_renewal, `Recommended Action` AS recommended_action, `Account Owner` AS account_owner,        MEASURE(`Revenue at Risk`) AS revenue_at_risk, MEASURE(`Total Contract Value`) AS contract_value,        MEASURE(`Avg Renewal Risk Score`) AS risk_score, MEASURE(`Avg Delivery Risk Score`) AS delivery_score,        MEASURE(`Avg Audience Risk Score`) AS audience_score, MEASURE(`Avg Renewal Urgency Score`) AS urgency_score,        CASE WHEN `Risk Tier`='High' THEN 1 ELSE 0 END AS is_high,        CASE WHEN `Renewal Window`='renews_this_quarter' THEN 1 ELSE 0 END AS is_tq,        CASE WHEN `Risk Tier`='High' AND `Renewal Window`='renews_this_quarter' THEN 1 ELSE 0 END AS is_act_today FROM mv_advertiser_renewal GROUP BY 1,2,3,4,5,6,7,8"
+   ],
+   "catalog": "cs_rbac_demo_catalog",
+   "schema": "ad_sales"
+  },
+  {
+   "name": "ds_camp",
+   "displayName": "Campaign delivery (drill-through + freshness)",
+   "queryLines": [
+    "SELECT account_owner, advertiser_name AS advertiser, campaign_id, category, campaign_pacing_ratio, delivery_status,        booked_spend, reach_delivery_ratio, in_target_pct, audience_quality_score,        nielsen_is_stale, nielsen_lag_hours, adserver_lag_hours FROM gold_campaign_delivery"
+   ],
+   "catalog": "cs_rbac_demo_catalog",
+   "schema": "ad_sales"
+  },
+  {
+   "name": "ds_ml_risk",
+   "displayName": "ds_ml_risk",
+   "queryLines": [
+    "SELECT account_owner, advertiser_name, category, region, risk_tier, renewal_window, days_to_renewal, p_churn, adv_shortfall_risk, renewal_risk_score, delivery_risk_score, audience_risk_score, renewal_urgency_score, revenue_at_risk, total_contract_value, recommended_action FROM dash_advertiser_risk"
+   ],
+   "catalog": "cs_rbac_demo_catalog",
+   "schema": "ad_sales"
+  },
+  {
+   "name": "ds_ml_decomp",
+   "displayName": "ds_ml_decomp",
+   "queryLines": [
+    "WITH top AS (SELECT advertiser_name, account_owner, p_churn, adv_shortfall_risk, renewal_urgency_score, revenue_at_risk FROM dash_advertiser_risk WHERE risk_tier='High' ORDER BY revenue_at_risk DESC LIMIT 15) SELECT advertiser_name, account_owner, driver, contribution FROM top LATERAL VIEW stack(3, 'Churn', 45*p_churn, 'Delivery', 35*adv_shortfall_risk, 'Urgency', 0.2*renewal_urgency_score) t AS driver, contribution"
+   ],
+   "catalog": "cs_rbac_demo_catalog",
+   "schema": "ad_sales"
+  },
+  {
+   "name": "ds_ml_monitor_wide",
+   "displayName": "ds_ml_monitor_wide",
+   "queryLines": [
+    "SELECT MAX(CASE WHEN model='delivery_shortfall_model' AND metric='auc' THEN value END) AS auc_delivery, MAX(CASE WHEN model='renewal_risk_model' AND metric='auc' THEN value END) AS auc_renewal FROM dash_model_health"
+   ],
+   "catalog": "cs_rbac_demo_catalog",
+   "schema": "ad_sales"
+  },
+  {
+   "name": "ds_ml_rates",
+   "displayName": "ds_ml_rates",
+   "queryLines": [
+    "SELECT model, CASE WHEN metric LIKE 'predicted%' THEN 'Predicted' ELSE 'Actual' END AS kind, value AS rate FROM dash_model_health WHERE metric LIKE '%rate'"
+   ],
+   "catalog": "cs_rbac_demo_catalog",
+   "schema": "ad_sales"
+  },
+  {
+   "name": "ds_ml_campshort",
+   "displayName": "ds_ml_campshort",
+   "queryLines": [
+    "SELECT c.account_owner, s.campaign_id, c.advertiser_name, c.category, s.p_shortfall, s.under_delivered, c.booked_spend, c.delivery_status FROM ml_campaign_shortfall_scores s JOIN gold_campaign_delivery c ON s.campaign_id=c.campaign_id"
+   ],
+   "catalog": "cs_rbac_demo_catalog",
+   "schema": "ad_sales"
+  }
+ ],
+ "pages": [
+  {
+   "name": "cockpit",
+   "displayName": "Renewal Cockpit",
+   "layout": [
+    {
+     "widget": {
+      "name": "hdr",
+      "multilineTextboxSpec": {
+       "lines": [
+        "# POLARIS MEDIA \u2014 Ad Sales Renewal Intelligence\n",
+        "Rules-based renewal-risk model on the `mv_advertiser_renewal` metric view (numbers match Genie & the app). **Act-today cohort = High risk + renews this quarter.**"
+       ]
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 0,
+      "width": 12,
+      "height": 2
+     }
+    },
+    {
+     "widget": {
+      "name": "kpi_act",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_adv",
+         "fields": [
+          {
+           "name": "sum(is_act_today)",
+           "expression": "SUM(`is_act_today`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "frame": {
+        "showTitle": true,
+        "title": {
+         "value": "\u26a0 ACT TODAY \u00b7 High + This Quarter",
+         "fields": []
+        }
+       },
+       "version": 2,
+       "widgetType": "counter",
+       "encodings": {
+        "value": {
+         "fieldName": "sum(is_act_today)"
+        }
+       },
+       "data": {
+        "queryName": "main_query"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 2,
+      "width": 3,
+      "height": 3
+     }
+    },
+    {
+     "widget": {
+      "name": "kpi_rev",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_adv",
+         "fields": [
+          {
+           "name": "sum(revenue_at_risk)",
+           "expression": "SUM(`revenue_at_risk`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "frame": {
+        "showTitle": true,
+        "title": {
+         "value": "Revenue at Risk",
+         "fields": []
+        }
+       },
+       "version": 2,
+       "widgetType": "counter",
+       "encodings": {
+        "value": {
+         "fieldName": "sum(revenue_at_risk)",
+         "format": {
+          "type": "number-currency",
+          "currencyCode": "USD",
+          "abbreviation": "compact",
+          "hideGroupSeparator": false,
+          "decimalPlaces": {
+           "type": "exact",
+           "places": 1
+          }
+         }
+        }
+       },
+       "data": {
+        "queryName": "main_query"
+       }
+      }
+     },
+     "position": {
+      "x": 3,
+      "y": 2,
+      "width": 3,
+      "height": 3
+     }
+    },
+    {
+     "widget": {
+      "name": "kpi_high",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_adv",
+         "fields": [
+          {
+           "name": "sum(is_high)",
+           "expression": "SUM(`is_high`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "frame": {
+        "showTitle": true,
+        "title": {
+         "value": "High-Risk Advertisers",
+         "fields": []
+        }
+       },
+       "version": 2,
+       "widgetType": "counter",
+       "encodings": {
+        "value": {
+         "fieldName": "sum(is_high)"
+        }
+       },
+       "data": {
+        "queryName": "main_query"
+       }
+      }
+     },
+     "position": {
+      "x": 6,
+      "y": 2,
+      "width": 3,
+      "height": 3
+     }
+    },
+    {
+     "widget": {
+      "name": "kpi_tq",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_adv",
+         "fields": [
+          {
+           "name": "sum(is_tq)",
+           "expression": "SUM(`is_tq`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "frame": {
+        "showTitle": true,
+        "title": {
+         "value": "Renewing This Quarter",
+         "fields": []
+        }
+       },
+       "version": 2,
+       "widgetType": "counter",
+       "encodings": {
+        "value": {
+         "fieldName": "sum(is_tq)"
+        }
+       },
+       "data": {
+        "queryName": "main_query"
+       }
+      }
+     },
+     "position": {
+      "x": 9,
+      "y": 2,
+      "width": 3,
+      "height": 3
+     }
+    },
+    {
+     "widget": {
+      "name": "bar_cat",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_adv",
+         "fields": [
+          {
+           "name": "category",
+           "expression": "`category`"
+          },
+          {
+           "name": "sum(revenue_at_risk)",
+           "expression": "SUM(`revenue_at_risk`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "frame": {
+        "showTitle": true,
+        "title": {
+         "value": "Revenue at Risk by Category",
+         "fields": []
+        }
+       },
+       "version": 3,
+       "widgetType": "bar",
+       "encodings": {
+        "x": {
+         "fieldName": "category",
+         "scale": {
+          "type": "categorical"
+         }
+        },
+        "y": {
+         "fieldName": "sum(revenue_at_risk)",
+         "format": {
+          "type": "number-currency",
+          "currencyCode": "USD",
+          "abbreviation": "none",
+          "hideGroupSeparator": false,
+          "decimalPlaces": {
+           "type": "exact",
+           "places": 0
+          }
+         },
+         "scale": {
+          "type": "quantitative"
+         }
+        }
+       },
+       "data": {
+        "queryName": "main_query"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 5,
+      "width": 6,
+      "height": 6
+     }
+    },
+    {
+     "widget": {
+      "name": "pie_tier",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_adv",
+         "fields": [
+          {
+           "name": "countdistinct(advertiser)",
+           "expression": "COUNT(DISTINCT `advertiser`)"
+          },
+          {
+           "name": "risk_tier",
+           "expression": "`risk_tier`"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "frame": {},
+       "version": 3,
+       "widgetType": "pie",
+       "encodings": {
+        "angle": {
+         "fieldName": "countdistinct(advertiser)",
+         "scale": {
+          "type": "quantitative"
+         }
+        },
+        "color": {
+         "fieldName": "risk_tier",
+         "scale": {
+          "type": "categorical",
+          "mappings": [
+           {
+            "value": "High",
+            "color": "#d32f2f"
+           },
+           {
+            "value": "Medium",
+            "color": "#ff9800"
+           },
+           {
+            "value": "Low",
+            "color": "#4caf50"
+           }
+          ]
+         }
+        },
+        "label": {
+         "show": true
+        }
+       },
+       "data": {
+        "queryName": "main_query"
+       }
+      }
+     },
+     "position": {
+      "x": 6,
+      "y": 5,
+      "width": 6,
+      "height": 6
+     }
+    },
+    {
+     "widget": {
+      "name": "tbl_adv",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_adv",
+         "fields": [
+          {
+           "name": "advertiser",
+           "expression": "`advertiser`"
+          },
+          {
+           "name": "risk_tier",
+           "expression": "`risk_tier`"
+          },
+          {
+           "name": "renewal_window",
+           "expression": "`renewal_window`"
+          },
+          {
+           "name": "days_to_renewal",
+           "expression": "`days_to_renewal`"
+          },
+          {
+           "name": "revenue_at_risk",
+           "expression": "`revenue_at_risk`"
+          },
+          {
+           "name": "risk_score",
+           "expression": "`risk_score`"
+          },
+          {
+           "name": "delivery_score",
+           "expression": "`delivery_score`"
+          },
+          {
+           "name": "audience_score",
+           "expression": "`audience_score`"
+          },
+          {
+           "name": "recommended_action",
+           "expression": "`recommended_action`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "frame": {
+        "showTitle": true,
+        "title": {
+         "value": "Advertisers \u2014 risk drivers (contributing factors)",
+         "fields": []
+        }
+       },
+       "version": 2,
+       "widgetType": "table",
+       "encodings": {
+        "columns": [
+         {
+          "fieldName": "advertiser"
+         },
+         {
+          "fieldName": "risk_tier"
+         },
+         {
+          "fieldName": "renewal_window"
+         },
+         {
+          "fieldName": "days_to_renewal"
+         },
+         {
+          "fieldName": "revenue_at_risk",
+          "format": {
+           "type": "number-currency",
+           "currencyCode": "USD",
+           "abbreviation": "none",
+           "hideGroupSeparator": false,
+           "decimalPlaces": {
+            "type": "exact",
+            "places": 0
+           }
+          }
+         },
+         {
+          "fieldName": "risk_score"
+         },
+         {
+          "fieldName": "delivery_score"
+         },
+         {
+          "fieldName": "audience_score"
+         },
+         {
+          "fieldName": "recommended_action"
+         }
+        ]
+       },
+       "data": {
+        "queryName": "main_query"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 11,
+      "width": 12,
+      "height": 6
+     }
+    },
+    {
+     "widget": {
+      "name": "tbl_camp",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_camp",
+         "fields": [
+          {
+           "name": "advertiser",
+           "expression": "`advertiser`"
+          },
+          {
+           "name": "campaign_id",
+           "expression": "`campaign_id`"
+          },
+          {
+           "name": "delivery_status",
+           "expression": "`delivery_status`"
+          },
+          {
+           "name": "campaign_pacing_ratio",
+           "expression": "`campaign_pacing_ratio`"
+          },
+          {
+           "name": "booked_spend",
+           "expression": "`booked_spend`"
+          },
+          {
+           "name": "reach_delivery_ratio",
+           "expression": "`reach_delivery_ratio`"
+          },
+          {
+           "name": "in_target_pct",
+           "expression": "`in_target_pct`"
+          },
+          {
+           "name": "audience_quality_score",
+           "expression": "`audience_quality_score`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "frame": {
+        "showTitle": true,
+        "title": {
+         "value": "Campaign delivery drill-through \u2014 pacing &amp; Nielsen (filter by advertiser)",
+         "fields": []
+        }
+       },
+       "version": 2,
+       "widgetType": "table",
+       "encodings": {
+        "columns": [
+         {
+          "fieldName": "advertiser"
+         },
+         {
+          "fieldName": "campaign_id"
+         },
+         {
+          "fieldName": "delivery_status"
+         },
+         {
+          "fieldName": "campaign_pacing_ratio"
+         },
+         {
+          "fieldName": "booked_spend",
+          "format": {
+           "type": "number-currency",
+           "currencyCode": "USD",
+           "abbreviation": "none",
+           "hideGroupSeparator": false,
+           "decimalPlaces": {
+            "type": "exact",
+            "places": 0
+           }
+          }
+         },
+         {
+          "fieldName": "reach_delivery_ratio",
+          "format": {
+           "type": "number",
+           "hideGroupSeparator": false,
+           "decimalPlaces": {
+            "type": "exact",
+            "places": 2
+           }
+          }
+         },
+         {
+          "fieldName": "in_target_pct"
+         },
+         {
+          "fieldName": "audience_quality_score"
+         }
+        ]
+       },
+       "data": {
+        "queryName": "main_query"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 17,
+      "width": 12,
+      "height": 6
+     }
+    }
+   ],
+   "pageType": "PAGE_TYPE_CANVAS",
+   "layoutVersion": "GRID_V1"
+  },
+  {
+   "name": "filters",
+   "displayName": "Filters",
+   "layout": [
+    {
+     "widget": {
+      "name": "f_adv",
+      "queries": [
+       {
+        "name": "fa1",
+        "query": {
+         "datasetName": "ds_adv",
+         "fields": [
+          {
+           "name": "advertiser",
+           "expression": "`advertiser`"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "fa2",
+        "query": {
+         "datasetName": "ds_camp",
+         "fields": [
+          {
+           "name": "advertiser",
+           "expression": "`advertiser`"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "f_adv_ml0",
+        "query": {
+         "datasetName": "ds_ml_risk",
+         "fields": [
+          {
+           "name": "advertiser_name",
+           "expression": "`advertiser_name`"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "f_adv_ml1",
+        "query": {
+         "datasetName": "ds_ml_campshort",
+         "fields": [
+          {
+           "name": "advertiser_name",
+           "expression": "`advertiser_name`"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "f_adv_ml2",
+        "query": {
+         "datasetName": "ds_ml_decomp",
+         "fields": [
+          {
+           "name": "advertiser_name",
+           "expression": "`advertiser_name`"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "filter-single-select",
+       "encodings": {
+        "fields": [
+         {
+          "fieldName": "advertiser",
+          "queryName": "fa1",
+          "displayName": "Advertiser"
+         },
+         {
+          "fieldName": "advertiser",
+          "queryName": "fa2"
+         },
+         {
+          "fieldName": "advertiser_name",
+          "queryName": "f_adv_ml0"
+         },
+         {
+          "fieldName": "advertiser_name",
+          "queryName": "f_adv_ml1"
+         },
+         {
+          "fieldName": "advertiser_name",
+          "queryName": "f_adv_ml2"
+         }
+        ]
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Advertiser (drill-through)"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 0,
+      "width": 3,
+      "height": 2
+     }
+    },
+    {
+     "widget": {
+      "name": "f_tier",
+      "queries": [
+       {
+        "name": "ft",
+        "query": {
+         "datasetName": "ds_adv",
+         "fields": [
+          {
+           "name": "risk_tier",
+           "expression": "`risk_tier`"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "f_tier_ml0",
+        "query": {
+         "datasetName": "ds_ml_risk",
+         "fields": [
+          {
+           "name": "risk_tier",
+           "expression": "`risk_tier`"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "filter-multi-select",
+       "encodings": {
+        "fields": [
+         {
+          "fieldName": "risk_tier",
+          "queryName": "ft",
+          "displayName": "Risk Tier"
+         },
+         {
+          "fieldName": "risk_tier",
+          "queryName": "f_tier_ml0"
+         }
+        ]
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Risk Tier"
+       }
+      }
+     },
+     "position": {
+      "x": 3,
+      "y": 0,
+      "width": 3,
+      "height": 2
+     }
+    },
+    {
+     "widget": {
+      "name": "f_win",
+      "queries": [
+       {
+        "name": "fw",
+        "query": {
+         "datasetName": "ds_adv",
+         "fields": [
+          {
+           "name": "renewal_window",
+           "expression": "`renewal_window`"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "f_win_ml0",
+        "query": {
+         "datasetName": "ds_ml_risk",
+         "fields": [
+          {
+           "name": "renewal_window",
+           "expression": "`renewal_window`"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "filter-multi-select",
+       "encodings": {
+        "fields": [
+         {
+          "fieldName": "renewal_window",
+          "queryName": "fw",
+          "displayName": "Renewal Window"
+         },
+         {
+          "fieldName": "renewal_window",
+          "queryName": "f_win_ml0"
+         }
+        ]
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Renewal Window"
+       }
+      }
+     },
+     "position": {
+      "x": 6,
+      "y": 0,
+      "width": 3,
+      "height": 2
+     }
+    },
+    {
+     "widget": {
+      "name": "f_cat",
+      "queries": [
+       {
+        "name": "fc1",
+        "query": {
+         "datasetName": "ds_adv",
+         "fields": [
+          {
+           "name": "category",
+           "expression": "`category`"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "fc2",
+        "query": {
+         "datasetName": "ds_camp",
+         "fields": [
+          {
+           "name": "category",
+           "expression": "`category`"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "f_cat_ml0",
+        "query": {
+         "datasetName": "ds_ml_risk",
+         "fields": [
+          {
+           "name": "category",
+           "expression": "`category`"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "f_cat_ml1",
+        "query": {
+         "datasetName": "ds_ml_campshort",
+         "fields": [
+          {
+           "name": "category",
+           "expression": "`category`"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "filter-multi-select",
+       "encodings": {
+        "fields": [
+         {
+          "fieldName": "category",
+          "queryName": "fc1",
+          "displayName": "Category"
+         },
+         {
+          "fieldName": "category",
+          "queryName": "fc2"
+         },
+         {
+          "fieldName": "category",
+          "queryName": "f_cat_ml0"
+         },
+         {
+          "fieldName": "category",
+          "queryName": "f_cat_ml1"
+         }
+        ]
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Category"
+       }
+      }
+     },
+     "position": {
+      "x": 9,
+      "y": 0,
+      "width": 3,
+      "height": 2
+     }
+    },
+    {
+     "widget": {
+      "name": "f_owner",
+      "queries": [
+       {
+        "name": "fo1",
+        "query": {
+         "datasetName": "ds_adv",
+         "fields": [
+          {
+           "name": "account_owner",
+           "expression": "`account_owner`"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "fo2",
+        "query": {
+         "datasetName": "ds_camp",
+         "fields": [
+          {
+           "name": "account_owner",
+           "expression": "`account_owner`"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "f_owner_ml0",
+        "query": {
+         "datasetName": "ds_ml_risk",
+         "fields": [
+          {
+           "name": "account_owner",
+           "expression": "`account_owner`"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "f_owner_ml1",
+        "query": {
+         "datasetName": "ds_ml_campshort",
+         "fields": [
+          {
+           "name": "account_owner",
+           "expression": "`account_owner`"
+          }
+         ],
+         "disaggregated": false
+        }
+       },
+       {
+        "name": "f_owner_ml2",
+        "query": {
+         "datasetName": "ds_ml_decomp",
+         "fields": [
+          {
+           "name": "account_owner",
+           "expression": "`account_owner`"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "filter-multi-select",
+       "encodings": {
+        "fields": [
+         {
+          "fieldName": "account_owner",
+          "queryName": "fo1",
+          "displayName": "Account Owner"
+         },
+         {
+          "fieldName": "account_owner",
+          "queryName": "fo2"
+         },
+         {
+          "fieldName": "account_owner",
+          "queryName": "f_owner_ml0"
+         },
+         {
+          "fieldName": "account_owner",
+          "queryName": "f_owner_ml1"
+         },
+         {
+          "fieldName": "account_owner",
+          "queryName": "f_owner_ml2"
+         }
+        ]
+       },
+       "frame": {
+        "showTitle": true,
+        "title": "Account Owner"
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 2,
+      "width": 3,
+      "height": 2
+     }
+    }
+   ],
+   "pageType": "PAGE_TYPE_GLOBAL_FILTERS",
+   "layoutVersion": "GRID_V1"
+  },
+  {
+   "name": "risk_analytics",
+   "displayName": "Risk Analytics",
+   "layout": [
+    {
+     "widget": {
+      "name": "ml_ra_hdr",
+      "multilineTextboxSpec": {
+       "lines": [
+        "# Risk Analytics \u2014 model-driven\n",
+        "Renewal-risk composite from two trained models (delivery-shortfall + renewal-risk). Quadrant prioritises high churn-probability \u00d7 high revenue; the bar decomposes each score into its drivers."
+       ]
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 0,
+      "width": 12,
+      "height": 1
+     }
+    },
+    {
+     "widget": {
+      "name": "ml_quadrant",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_ml_risk",
+         "fields": [
+          {
+           "name": "advertiser_name",
+           "expression": "`advertiser_name`"
+          },
+          {
+           "name": "p_churn",
+           "expression": "`p_churn`"
+          },
+          {
+           "name": "revenue_at_risk",
+           "expression": "`revenue_at_risk`"
+          },
+          {
+           "name": "risk_tier",
+           "expression": "`risk_tier`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 3,
+       "widgetType": "scatter",
+       "frame": {
+        "showTitle": true,
+        "title": "Churn probability \u00d7 revenue at risk (top-right = act today)"
+       },
+       "encodings": {
+        "x": {
+         "fieldName": "p_churn",
+         "scale": {
+          "type": "quantitative"
+         },
+         "displayName": "Churn probability"
+        },
+        "y": {
+         "fieldName": "revenue_at_risk",
+         "scale": {
+          "type": "quantitative"
+         },
+         "displayName": "Revenue at Risk",
+         "format": {
+          "type": "number-currency",
+          "currencyCode": "USD",
+          "abbreviation": "none",
+          "hideGroupSeparator": false,
+          "decimalPlaces": {
+           "type": "exact",
+           "places": 0
+          }
+         }
+        },
+        "color": {
+         "fieldName": "risk_tier",
+         "scale": {
+          "type": "categorical",
+          "mappings": [
+           {
+            "value": "High",
+            "color": "#FF3B3B"
+           },
+           {
+            "value": "Medium",
+            "color": "#FFB020"
+           },
+           {
+            "value": "Low",
+            "color": "#33C27F"
+           }
+          ]
+         },
+         "displayName": "Tier"
+        }
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 1,
+      "width": 7,
+      "height": 7
+     }
+    },
+    {
+     "widget": {
+      "name": "ml_decomp",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_ml_decomp",
+         "fields": [
+          {
+           "name": "advertiser_name",
+           "expression": "`advertiser_name`"
+          },
+          {
+           "name": "driver",
+           "expression": "`driver`"
+          },
+          {
+           "name": "sum(contribution)",
+           "expression": "SUM(`contribution`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 3,
+       "widgetType": "bar",
+       "frame": {
+        "showTitle": true,
+        "title": "Risk-score decomposition (High tier, top 15)"
+       },
+       "encodings": {
+        "y": {
+         "fieldName": "advertiser_name",
+         "scale": {
+          "type": "categorical"
+         },
+         "displayName": "Advertiser"
+        },
+        "x": {
+         "fieldName": "sum(contribution)",
+         "scale": {
+          "type": "quantitative"
+         },
+         "displayName": "Score points"
+        },
+        "color": {
+         "fieldName": "driver",
+         "scale": {
+          "type": "categorical",
+          "mappings": [
+           {
+            "value": "Churn",
+            "color": "#FF3B3B"
+           },
+           {
+            "value": "Delivery",
+            "color": "#2F6BFF"
+           },
+           {
+            "value": "Urgency",
+            "color": "#FFB020"
+           }
+          ]
+         },
+         "displayName": "Driver"
+        }
+       }
+      }
+     },
+     "position": {
+      "x": 7,
+      "y": 1,
+      "width": 5,
+      "height": 7
+     }
+    },
+    {
+     "widget": {
+      "name": "ml_risk_tbl",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_ml_risk",
+         "fields": [
+          {
+           "name": "advertiser_name",
+           "expression": "`advertiser_name`"
+          },
+          {
+           "name": "category",
+           "expression": "`category`"
+          },
+          {
+           "name": "risk_tier",
+           "expression": "`risk_tier`"
+          },
+          {
+           "name": "renewal_window",
+           "expression": "`renewal_window`"
+          },
+          {
+           "name": "days_to_renewal",
+           "expression": "`days_to_renewal`"
+          },
+          {
+           "name": "p_churn",
+           "expression": "`p_churn`"
+          },
+          {
+           "name": "adv_shortfall_risk",
+           "expression": "`adv_shortfall_risk`"
+          },
+          {
+           "name": "renewal_risk_score",
+           "expression": "`renewal_risk_score`"
+          },
+          {
+           "name": "revenue_at_risk",
+           "expression": "`revenue_at_risk`"
+          },
+          {
+           "name": "recommended_action",
+           "expression": "`recommended_action`"
+          }
+         ],
+         "disaggregated": true,
+         "orders": [
+          {
+           "direction": "DESC",
+           "expression": "`revenue_at_risk`"
+          }
+         ]
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "table",
+       "frame": {
+        "showTitle": true,
+        "title": "Advertisers \u2014 model drivers"
+       },
+       "encodings": {
+        "columns": [
+         {
+          "fieldName": "advertiser_name",
+          "displayName": "Advertiser"
+         },
+         {
+          "fieldName": "category",
+          "displayName": "Category"
+         },
+         {
+          "fieldName": "risk_tier",
+          "displayName": "Tier"
+         },
+         {
+          "fieldName": "renewal_window",
+          "displayName": "Renewal Window"
+         },
+         {
+          "fieldName": "days_to_renewal",
+          "displayName": "Days to Renewal"
+         },
+         {
+          "fieldName": "p_churn",
+          "displayName": "Churn Prob",
+          "format": {
+           "type": "number-percent",
+           "decimalPlaces": {
+            "type": "max",
+            "places": 0
+           }
+          }
+         },
+         {
+          "fieldName": "adv_shortfall_risk",
+          "displayName": "Shortfall Risk",
+          "format": {
+           "type": "number-percent",
+           "decimalPlaces": {
+            "type": "max",
+            "places": 0
+           }
+          }
+         },
+         {
+          "fieldName": "renewal_risk_score",
+          "displayName": "Risk Score",
+          "format": {
+           "type": "number",
+           "decimalPlaces": {
+            "type": "exact",
+            "places": 1
+           }
+          }
+         },
+         {
+          "fieldName": "revenue_at_risk",
+          "displayName": "Revenue at Risk",
+          "format": {
+           "type": "number-currency",
+           "currencyCode": "USD",
+           "abbreviation": "none",
+           "hideGroupSeparator": false,
+           "decimalPlaces": {
+            "type": "exact",
+            "places": 0
+           }
+          }
+         },
+         {
+          "fieldName": "recommended_action",
+          "displayName": "Recommended Action"
+         }
+        ]
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 8,
+      "width": 12,
+      "height": 6
+     }
+    }
+   ],
+   "pageType": "PAGE_TYPE_CANVAS",
+   "layoutVersion": "GRID_V1"
+  },
+  {
+   "name": "model_health",
+   "displayName": "Model Health",
+   "layout": [
+    {
+     "widget": {
+      "name": "ml_mh_hdr",
+      "multilineTextboxSpec": {
+       "lines": [
+        "# Model Health \u2014 trained, tracked, monitored\n",
+        "Both models are logged in MLflow and registered in Unity Catalog, batch-scored and monitored predicted-vs-actual. Delivery-shortfall has real labels; renewal-risk is a v1 on limited history."
+       ]
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 0,
+      "width": 12,
+      "height": 1
+     }
+    },
+    {
+     "widget": {
+      "name": "ml_auc_a",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_ml_monitor_wide",
+         "fields": [
+          {
+           "name": "auc_delivery",
+           "expression": "MAX(`auc_delivery`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "counter",
+       "frame": {
+        "showTitle": true,
+        "title": "Delivery-shortfall model \u00b7 AUC"
+       },
+       "encodings": {
+        "value": {
+         "fieldName": "auc_delivery",
+         "format": {
+          "type": "number",
+          "decimalPlaces": {
+           "type": "exact",
+           "places": 3
+          }
+         }
+        }
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 1,
+      "width": 6,
+      "height": 3
+     }
+    },
+    {
+     "widget": {
+      "name": "ml_auc_b",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_ml_monitor_wide",
+         "fields": [
+          {
+           "name": "auc_renewal",
+           "expression": "MAX(`auc_renewal`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "counter",
+       "frame": {
+        "showTitle": true,
+        "title": "Renewal-risk model \u00b7 AUC"
+       },
+       "encodings": {
+        "value": {
+         "fieldName": "auc_renewal",
+         "format": {
+          "type": "number",
+          "decimalPlaces": {
+           "type": "exact",
+           "places": 3
+          }
+         }
+        }
+       }
+      }
+     },
+     "position": {
+      "x": 6,
+      "y": 1,
+      "width": 6,
+      "height": 3
+     }
+    },
+    {
+     "widget": {
+      "name": "ml_rates",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_ml_rates",
+         "fields": [
+          {
+           "name": "model",
+           "expression": "`model`"
+          },
+          {
+           "name": "kind",
+           "expression": "`kind`"
+          },
+          {
+           "name": "sum(rate)",
+           "expression": "SUM(`rate`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 3,
+       "widgetType": "bar",
+       "frame": {
+        "showTitle": true,
+        "title": "Predicted vs actual rate (monitoring)"
+       },
+       "encodings": {
+        "x": {
+         "fieldName": "model",
+         "scale": {
+          "type": "categorical"
+         },
+         "displayName": "Model"
+        },
+        "y": {
+         "fieldName": "sum(rate)",
+         "scale": {
+          "type": "quantitative"
+         },
+         "displayName": "Rate",
+         "format": {
+          "type": "number-percent",
+          "decimalPlaces": {
+           "type": "max",
+           "places": 1
+          }
+         }
+        },
+        "color": {
+         "fieldName": "kind",
+         "scale": {
+          "type": "categorical",
+          "mappings": [
+           {
+            "value": "Predicted",
+            "color": "#2F6BFF"
+           },
+           {
+            "value": "Actual",
+            "color": "#8ACAFF"
+           }
+          ]
+         },
+         "displayName": ""
+        }
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 4,
+      "width": 12,
+      "height": 6
+     }
+    }
+   ],
+   "pageType": "PAGE_TYPE_CANVAS",
+   "layoutVersion": "GRID_V1"
+  },
+  {
+   "name": "delivery_risk",
+   "displayName": "Delivery Risk",
+   "layout": [
+    {
+     "widget": {
+      "name": "ml_dr_hdr",
+      "multilineTextboxSpec": {
+       "lines": [
+        "# Delivery Risk \u2014 campaign shortfall\n",
+        "Per-campaign probability of under-delivery from the trained shortfall model. Act on high-probability, high-spend campaigns before flight end."
+       ]
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 0,
+      "width": 12,
+      "height": 1
+     }
+    },
+    {
+     "widget": {
+      "name": "ml_hist",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_ml_campshort",
+         "fields": [
+          {
+           "name": "bin(p_shortfall,binWidth=0.1)",
+           "expression": "BIN_FLOOR(`p_shortfall`, 0.1)"
+          },
+          {
+           "name": "count(*)",
+           "expression": "COUNT(`*`)"
+          }
+         ],
+         "disaggregated": false
+        }
+       }
+      ],
+      "spec": {
+       "version": 3,
+       "widgetType": "histogram",
+       "frame": {
+        "showTitle": true,
+        "title": "Distribution of shortfall probability"
+       },
+       "encodings": {
+        "x": {
+         "fieldName": "bin(p_shortfall,binWidth=0.1)",
+         "scale": {
+          "type": "quantitative"
+         },
+         "displayName": "p(shortfall)"
+        },
+        "y": {
+         "fieldName": "count(*)",
+         "scale": {
+          "type": "quantitative"
+         },
+         "displayName": "Campaigns"
+        }
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 1,
+      "width": 6,
+      "height": 6
+     }
+    },
+    {
+     "widget": {
+      "name": "ml_scatter",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_ml_campshort",
+         "fields": [
+          {
+           "name": "campaign_id",
+           "expression": "`campaign_id`"
+          },
+          {
+           "name": "p_shortfall",
+           "expression": "`p_shortfall`"
+          },
+          {
+           "name": "booked_spend",
+           "expression": "`booked_spend`"
+          },
+          {
+           "name": "delivery_status",
+           "expression": "`delivery_status`"
+          }
+         ],
+         "disaggregated": true
+        }
+       }
+      ],
+      "spec": {
+       "version": 3,
+       "widgetType": "scatter",
+       "frame": {
+        "showTitle": true,
+        "title": "Shortfall probability \u00d7 booked spend ($ exposure)"
+       },
+       "encodings": {
+        "x": {
+         "fieldName": "p_shortfall",
+         "scale": {
+          "type": "quantitative"
+         },
+         "displayName": "p(shortfall)"
+        },
+        "y": {
+         "fieldName": "booked_spend",
+         "scale": {
+          "type": "quantitative"
+         },
+         "displayName": "Booked Spend",
+         "format": {
+          "type": "number-currency",
+          "currencyCode": "USD",
+          "abbreviation": "none",
+          "hideGroupSeparator": false,
+          "decimalPlaces": {
+           "type": "exact",
+           "places": 0
+          }
+         }
+        },
+        "color": {
+         "fieldName": "delivery_status",
+         "scale": {
+          "type": "categorical"
+         },
+         "displayName": "Status"
+        }
+       }
+      }
+     },
+     "position": {
+      "x": 6,
+      "y": 1,
+      "width": 6,
+      "height": 6
+     }
+    },
+    {
+     "widget": {
+      "name": "ml_camp_tbl",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "ds_ml_campshort",
+         "fields": [
+          {
+           "name": "campaign_id",
+           "expression": "`campaign_id`"
+          },
+          {
+           "name": "advertiser_name",
+           "expression": "`advertiser_name`"
+          },
+          {
+           "name": "category",
+           "expression": "`category`"
+          },
+          {
+           "name": "p_shortfall",
+           "expression": "`p_shortfall`"
+          },
+          {
+           "name": "booked_spend",
+           "expression": "`booked_spend`"
+          },
+          {
+           "name": "delivery_status",
+           "expression": "`delivery_status`"
+          }
+         ],
+         "disaggregated": true,
+         "orders": [
+          {
+           "direction": "DESC",
+           "expression": "`p_shortfall`"
+          }
+         ]
+        }
+       }
+      ],
+      "spec": {
+       "version": 2,
+       "widgetType": "table",
+       "frame": {
+        "showTitle": true,
+        "title": "Highest-risk campaigns"
+       },
+       "encodings": {
+        "columns": [
+         {
+          "fieldName": "campaign_id",
+          "displayName": "Campaign"
+         },
+         {
+          "fieldName": "advertiser_name",
+          "displayName": "Advertiser"
+         },
+         {
+          "fieldName": "category",
+          "displayName": "Category"
+         },
+         {
+          "fieldName": "p_shortfall",
+          "displayName": "p(shortfall)",
+          "format": {
+           "type": "number-percent",
+           "decimalPlaces": {
+            "type": "max",
+            "places": 0
+           }
+          }
+         },
+         {
+          "fieldName": "booked_spend",
+          "displayName": "Booked Spend",
+          "format": {
+           "type": "number-currency",
+           "currencyCode": "USD",
+           "abbreviation": "none",
+           "hideGroupSeparator": false,
+           "decimalPlaces": {
+            "type": "exact",
+            "places": 0
+           }
+          }
+         },
+         {
+          "fieldName": "delivery_status",
+          "displayName": "Status"
+         }
+        ]
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 7,
+      "width": 12,
+      "height": 6
+     }
+    }
+   ],
+   "pageType": "PAGE_TYPE_CANVAS",
+   "layoutVersion": "GRID_V1"
+  }
+ ],
+ "uiSettings": {
+  "locale": "en-US",
+  "theme": {
+   "canvasBackgroundColor": {
+    "light": "#08080B",
+    "dark": "#08080B"
+   },
+   "widgetBackgroundColor": {
+    "light": "#12131A",
+    "dark": "#12131A"
+   },
+   "widgetBorderColor": {
+    "light": "#23242E",
+    "dark": "#23242E"
+   },
+   "fontColor": {
+    "light": "#F5F6FA",
+    "dark": "#F5F6FA"
+   },
+   "selectionColor": {
+    "light": "#2F6BFF",
+    "dark": "#2F6BFF"
+   },
+   "visualizationColors": [
+    "#2F6BFF",
+    "#5AA0FF",
+    "#8ACAFF",
+    "#FFB020",
+    "#FF7054",
+    "#FF3B3B",
+    "#33C27F"
+   ],
+   "widgetHeaderAlignment": "LEFT",
+   "fontFamily": "Inter",
+   "widgetCornerRadius": 8
+  },
+  "genieSpace": {
+   "isEnabled": true,
+   "overrideId": "01f1ae391641100a8c0331c61624c4c6",
+   "enablementMode": "ENABLED"
+  },
+  "applyModeEnabled": false
+ }
+}

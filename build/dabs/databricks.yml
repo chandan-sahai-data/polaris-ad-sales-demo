@@ -1,0 +1,18 @@
+bundle:
+  name: ad_sales_renewal_intelligence
+
+variables:
+  catalog:
+    default: cs_genie_research_catalog
+  schema:
+    default: ad_sales
+
+targets:
+  dev:
+    default: true
+    mode: development
+    workspace:
+      host: https://fevm-cs-genie-research.cloud.databricks.com
+
+include:
+  - resources/*.yml

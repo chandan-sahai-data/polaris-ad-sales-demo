@@ -1,0 +1,7 @@
+bundle:
+  name: ad-sales-cockpit-bundle
+targets:
+  dev:
+    default: true
+    workspace:
+      host: https://fevm-cs-genie-research.cloud.databricks.com

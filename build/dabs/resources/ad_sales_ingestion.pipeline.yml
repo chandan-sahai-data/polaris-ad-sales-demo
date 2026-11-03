@@ -1,0 +1,22 @@
+resources:
+  pipelines:
+    ad_sales_ingestion:
+      name: "Ad Sales Ingestion (${var.catalog}.${var.schema})"
+      catalog: ${var.catalog}
+      schema: ${var.schema}
+      serverless: true
+      channel: CURRENT
+      photon: true
+      development: true
+      libraries:
+        - file:
+            path: ../src/bronze.py
+        - file:
+            path: ../src/silver.py
+        - file:
+            path: ../src/gold.py
+        - file:
+            path: ../src/gold_risk.py
+      configuration:
+        source_catalog: ${var.catalog}
+        source_schema: ${var.schema}

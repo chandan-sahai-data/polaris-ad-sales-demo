@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Ad Sales Intelligence Cockpit</title>
+<style>
+  :root{
+    --bg:#0b0f17; --panel:#121826; --panel2:#0f1420; --line:#1e2836; --text:#e6ebf2;
+    --muted:#8b98ac; --accent:#4ea1ff; --high:#ff5470; --med:#ffb020; --low:#3ad29f;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text)}
+  header{display:flex;align-items:center;gap:14px;padding:14px 22px;background:linear-gradient(90deg,#0d1424,#0b0f17);border-bottom:1px solid var(--line)}
+  header .logo{width:26px;height:26px;border-radius:6px;background:radial-gradient(circle at 30% 30%,#6db6ff,#2b6fd6)}
+  header h1{font-size:17px;font-weight:650;margin:0;letter-spacing:.2px}
+  header .sub{color:var(--muted);font-size:12.5px;margin-left:auto}
+  nav{display:flex;gap:4px;padding:10px 18px 0;background:var(--bg);border-bottom:1px solid var(--line)}
+  nav button{background:none;border:none;color:var(--muted);padding:10px 16px;font-size:13.5px;cursor:pointer;border-bottom:2px solid transparent;font-weight:550}
+  nav button.active{color:var(--text);border-bottom-color:var(--accent)}
+  .tab{display:none;height:calc(100vh - 108px)}
+  .tab.active{display:block}
+  iframe{width:100%;height:100%;border:0;background:#fff}
+  .pad{padding:18px 22px;height:100%;overflow:auto}
+  .filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+  select,input,textarea{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:7px 10px;font-size:13px;font-family:inherit}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;position:sticky;top:0;background:var(--panel)}
+  tr:hover td{background:#0f1626}
+  .tier{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11.5px;font-weight:650}
+  .tier.High{background:rgba(255,84,112,.16);color:var(--high)}
+  .tier.Medium{background:rgba(255,176,32,.16);color:var(--med)}
+  .tier.Low{background:rgba(58,210,159,.16);color:var(--low)}
+  .btn{background:var(--accent);color:#04121f;border:none;border-radius:7px;padding:6px 11px;font-size:12px;font-weight:650;cursor:pointer;margin-right:6px}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+  .rev{color:#ffd27a;font-variant-numeric:tabular-nums}
+  .muted{color:var(--muted)}
+  .act{font-size:11.5px;color:var(--low)}
+  /* Genie */
+  #chat{display:flex;flex-direction:column;height:100%}
+  #log{flex:1;overflow:auto;padding:6px 2px}
+  .msg{max-width:820px;margin:10px 0;padding:11px 14px;border-radius:10px;font-size:13.5px;line-height:1.5}
+  .msg.u{background:#17324f;margin-left:auto}
+  .msg.g{background:var(--panel)}
+  .msg pre{white-space:pre-wrap;background:#0a0e16;padding:8px;border-radius:6px;font-size:12px;color:#9fd0ff;overflow:auto;margin:6px 0 0}
+  .msg details.sqlwrap{margin-top:8px}
+  .msg details.sqlwrap summary{cursor:pointer;color:#9fd0ff;font-size:11.5px;list-style:none;user-select:none;opacity:.85}
+  .msg details.sqlwrap summary::-webkit-details-marker{display:none}
+  .msg details.sqlwrap summary::before{content:'▸ Show SQL'}
+  .msg details.sqlwrap[open] summary::before{content:'▾ Hide SQL'}
+  .msg details.sqlwrap summary{font-size:0}
+  .msg details.sqlwrap summary::before{font-size:11.5px}
+  .msg table{font-size:12px;margin-top:8px}
+  #ask{display:flex;gap:8px;padding-top:10px}
+  #ask input{flex:1}
+  .banner{background:linear-gradient(90deg,rgba(255,84,112,.14),transparent);border:1px solid rgba(255,84,112,.3);border-radius:9px;padding:10px 14px;margin-bottom:14px;font-size:13px}
+  /* Deal Memory */
+  .dm-intro{font-size:13px;color:var(--text);margin-bottom:14px;max-width:900px;line-height:1.5}
+  .dm-intro code{background:#0a0e16;padding:1px 5px;border-radius:4px;font-size:12px;color:#9fd0ff}
+  .dm-search{display:flex;gap:8px;max-width:760px;margin-bottom:10px}
+  .dm-search input{flex:1}
+  .dm-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .chip{background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--muted);cursor:pointer}
+  .chip:hover{color:var(--text);border-color:var(--accent)}
+  .dm-card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px;max-width:900px}
+  .dm-card .dm-head{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap}
+  .dm-card .dm-adv{font-weight:650}
+  .dm-card .dm-type{font-size:11px;text-transform:uppercase;letter-spacing:.4px;background:rgba(78,161,255,.16);color:var(--accent);padding:2px 8px;border-radius:20px}
+  .dm-card .dm-src{color:var(--muted);font-size:12px}
+  .dm-card .dm-score{margin-left:auto;color:var(--low);font-size:12px;font-variant-numeric:tabular-nums}
+  .dm-card .dm-body{font-size:13px;line-height:1.55;color:var(--text)}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center}
+  .modal.show{display:flex}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;width:440px}
+  .card h3{margin:0 0 12px}
+  .card label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+  .card textarea,.card input,.card select{width:100%}
+  .last-note{background:#0a0e16;border:1px solid var(--line);border-left:3px solid var(--low);border-radius:7px;padding:9px 11px;margin-bottom:6px;font-size:12.5px}
+  .last-note .lbl{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
+  .last-note .note{color:var(--text)}
+  .last-note .meta{color:var(--muted);font-size:11.5px;margin-top:4px}
+  /* Genie One + Ontology tab */
+  .one-wrap{display:flex;height:100%;gap:0}
+  .one-left{flex:1.35;min-width:0;display:flex;flex-direction:column;padding:16px 18px;overflow:auto;border-right:1px solid var(--line)}
+  .one-right{flex:1;min-width:340px;display:flex;flex-direction:column;padding:16px 18px;overflow:hidden}
+  .one-hd{font-size:14px;font-weight:650;margin-bottom:10px}
+  .one-hd .muted{font-weight:400}
+  .one-graph{flex:1;min-height:360px;background:#0a0e16;border:1px solid var(--line);border-radius:12px;padding:6px}
+  .one-graph svg{width:100%;height:100%;min-height:360px}
+  .one-note{font-size:12px;margin-top:10px;max-width:640px}
+  .ont-edge{stroke:#33465e;stroke-width:1.5}
+  .ont-edge-lbl{fill:var(--muted);font-size:10.5px}
+  .ont-node rect{fill:var(--panel);stroke:#2b6fd6;stroke-width:1.5;rx:9}
+  .ont-node.hub rect{stroke:var(--accent);stroke-width:2.5;fill:#12203a}
+  .ont-name{fill:var(--text);font-size:12.5px;font-weight:650}
+  .ont-meta{fill:var(--muted);font-size:10.5px}
+  .ont-count{fill:var(--accent);font-size:12px;font-weight:650;font-variant-numeric:tabular-nums}
+  #one-log{flex:1;overflow:auto;display:flex;flex-direction:column;gap:10px;padding-right:4px}
+  #one-ask{display:flex;gap:8px;margin-top:10px}
+  #one-ask input{flex:1}
+  .one-steps{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .one-step{font-size:10.5px;background:rgba(78,161,255,.13);color:var(--accent);border:1px solid rgba(78,161,255,.3);border-radius:20px;padding:2px 9px;font-family:ui-monospace,Menlo,monospace}
+  .one-thoughts{margin-top:8px}
+  .one-thoughts summary{cursor:pointer;color:#9fd0ff;font-size:11.5px;opacity:.85;list-style:none}
+  .one-thoughts summary::-webkit-details-marker{display:none}
+  .one-thoughts summary::before{content:'▸ Show routing'}
+  .one-thoughts[open] summary::before{content:'▾ Hide routing'}
+  .one-thoughts .th{font-size:12px;color:var(--muted);border-left:2px solid var(--line);padding:4px 0 4px 10px;margin:6px 0}
+  @media (max-width:820px){.one-wrap{flex-direction:column;height:auto}.one-left,.one-right{border-right:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"></div>
+  <h1>Polaris · Ad Sales Intelligence Cockpit</h1>
+  <div class="sub" id="sub">Renewal risk · delivery vs plan · one surface</div>
+</header>
+<nav>
+  <button data-tab="rr" class="active">Renewal &amp; Risk Insights</button>
+  <button data-tab="genie">Ask Genie</button>
+  <button data-tab="one">Genie One + Ontology</button>
+  <button data-tab="as">Operational Insights</button>
+  <button data-tab="deal">Deal Memory</button>
+  <button data-tab="esc">Escalation &amp; Actions</button>
+</nav>
+
+<div class="tab active" id="tab-rr"><iframe id="if-rr" title="Renewal & Risk Insights"></iframe></div>
+<div class="tab" id="tab-as"><iframe id="if-as" title="Operational Insights"></iframe></div>
+
+<div class="tab" id="tab-genie">
+  <div class="pad" id="chat">
+    <div id="log">
+      <div class="msg g">Ask about renewal risk, delivery vs plan, CPM, or audience efficiency. Try: <em>"Summarize Meridian Retail (062)'s delivery against plan"</em> or <em>"Which segments delivered the best reach efficiency for QSR?"</em></div>
+    </div>
+    <div id="ask">
+      <input id="q" placeholder="Ask Genie…" autocomplete="off"/>
+      <button class="btn" onclick="sendGenie()">Send</button>
+      <button class="btn ghost" onclick="resetGenie()">New chat</button>
+    </div>
+  </div>
+</div>
+
+<div class="tab" id="tab-one">
+  <div class="one-wrap">
+    <div class="one-left">
+      <div class="one-hd">Current Ontology Graph <span class="muted" id="ont-cat"></span></div>
+      <div class="one-graph"><svg id="ont-svg" viewBox="0 0 980 500" preserveAspectRatio="xMidYMid meet"></svg></div>
+      <div class="muted one-note">Governed entities and their relationships in Unity Catalog — node counts are live. Genie One reasons over this ontology to route questions across the data.</div>
+    </div>
+    <div class="one-right">
+      <div class="one-hd">Genie One <span class="muted">· cross-data (onechat)</span></div>
+      <div id="one-log">
+        <div class="msg g">Ask across <b>all</b> governed data — Genie One discovers the right assets and routes the question. Try: <em>"How many advertisers renew this quarter and how many are high risk?"</em> or <em>"What did we promise Meridian at renewal?"</em></div>
+      </div>
+      <div id="one-ask">
+        <input id="oneq" placeholder="Ask Genie One…" autocomplete="off"/>
+        <button class="btn" onclick="sendOne()">Send</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tab" id="tab-deal">
+  <div class="pad">
+    <div class="dm-intro">Semantic search over deal memory — recaps, contracts &amp; QBR notes embedded with <code>databricks-bge-large-en</code>, retrieved by cosine similarity and cited back to the advertiser. <span class="muted">(Managed Vector Search + a Knowledge Assistant is the production scale-out.)</span></div>
+    <div class="dm-search">
+      <input id="dm-q" placeholder="e.g. What did we promise Meridian in their last renewal?" autocomplete="off"/>
+      <button class="btn" onclick="searchDeal()">Search</button>
+    </div>
+    <div class="dm-chips">
+      <span class="chip" onclick="dmAsk('What did we promise Meridian in their last renewal?')">What did we promise Meridian?</span>
+      <span class="chip" onclick="dmAsk('Which recaps flagged viewability or under-delivery concerns?')">Viewability / under-delivery concerns</span>
+      <span class="chip" onclick="dmAsk('Which advertisers have a make-good guarantee at renewal?')">Make-good guarantees</span>
+    </div>
+    <div id="dm-results"></div>
+  </div>
+</div>
+
+<div class="tab" id="tab-esc">
+  <div class="pad">
+    <div class="banner" id="hero">Loading priority book…</div>
+    <div class="filters">
+      <select id="f-tier"><option value="">All tiers</option><option>High</option><option>Medium</option><option>Low</option></select>
+      <select id="f-window"><option value="">All renewal windows</option><option value="renews_this_quarter">Renews this quarter</option><option value="renews_next_quarter">Renews next quarter</option><option value="already_in_scatter">Already in scatter</option></select>
+      <select id="f-adv"><option value="">All advertisers</option></select>
+      <span class="muted" id="count"></span>
+    </div>
+    <table><thead><tr>
+      <th>Advertiser</th><th>Cat</th><th>Tier</th><th>Score</th><th>Rev at risk</th>
+      <th>Renewal</th><th>Behind</th><th>Drivers</th><th>Last action</th><th></th>
+    </tr></thead><tbody id="grid"></tbody></table>
+  </div>
+</div>
+
+<div class="modal" id="modal"><div class="card">
+  <h3 id="m-title">Action</h3>
+  <input type="hidden" id="m-adv"/><input type="hidden" id="m-type"/>
+  <div id="m-last" class="last-note" hidden></div>
+  <label>Contact note</label>
+  <textarea id="m-note" rows="3" placeholder="e.g. Renewal call booked — discussed make-good for under-delivery"></textarea>
+  <label>Next connect date</label>
+  <input type="date" id="m-date"/>
+  <div style="margin-top:16px;text-align:right">
+    <button class="btn ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn" onclick="submitAction()">Save</button>
+  </div>
+</div></div>
+
+<script>
+let CFG={}, conv=null, ACTIONS={};
+const $=s=>document.querySelector(s);
+async function boot(){
+  CFG=await (await fetch('/api/config')).json();
+  const base=(CFG.host.startsWith('http')?CFG.host:'https://'+CFG.host).replace(/\/$/,'');
+  const embed=(id)=>`${base}/embed/dashboardsv3/${id}?o=${CFG.workspace_id}`;
+  if(CFG.dashboard_as) $('#if-as').src=embed(CFG.dashboard_as);
+  if(CFG.dashboard_rr) $('#if-rr').src=embed(CFG.dashboard_rr);
+  loadAdvertisers(); loadGrid();
+}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); $('#tab-'+b.dataset.tab).classList.add('active');
+  if(b.dataset.tab==='one') loadOntology();   // lazy-load the graph on first open
+});
+async function loadAdvertisers(){
+  const a=await (await fetch('/api/advertisers')).json();
+  $('#f-adv').innerHTML='<option value="">All advertisers</option>'+a.map(x=>`<option value="${x.advertiser_id}">${x.advertiser_name}</option>`).join('');
+}
+['f-tier','f-window','f-adv'].forEach(id=>$('#'+id).onchange=loadGrid);
+async function loadGrid(){
+  const p=new URLSearchParams({tier:$('#f-tier').value,window:$('#f-window').value,advertiser:$('#f-adv').value});
+  const rows=await (await fetch('/api/risk?'+p)).json();
+  const money=v=>'$'+Math.round(Number(v)).toLocaleString('en-US');
+  const high=rows.filter(r=>r.risk_tier==='High'), q=rows.filter(r=>r.renewal_window==='renews_this_quarter');
+  const act=rows.filter(r=>r.risk_tier==='High'&&r.renewal_window==='renews_this_quarter');
+  const totRisk=rows.reduce((s,r)=>s+Number(r.revenue_at_risk),0);
+  $('#hero').innerHTML=`<b>${act.length}</b> act-today accounts (High risk + renews this quarter) · <b class="rev">${money(totRisk)}</b> revenue at risk in view · <b>${high.length}</b> High · <b>${q.length}</b> renew this quarter`;
+  $('#count').textContent=rows.length+' advertisers';
+  ACTIONS={}; rows.forEach(r=>ACTIONS[r.advertiser_id]={action:r.last_action,note:r.last_note,next:r.next_connect_date,at:r.last_acted_at});
+  $('#grid').innerHTML=rows.map(r=>{
+    const la=r.last_action?`<span class="act">${r.last_action}${r.next_connect_date?' · next '+r.next_connect_date:''}</span>`:'<span class="muted">—</span>';
+    return `<tr>
+      <td>${r.advertiser_name}</td><td class="muted">${r.category}</td>
+      <td><span class="tier ${r.risk_tier}">${r.risk_tier}</span></td>
+      <td>${Number(r.risk_score).toFixed(1)}</td>
+      <td class="rev">${money(r.revenue_at_risk)}</td>
+      <td class="muted">${r.renewal_window.replace(/_/g,' ')}${r.days_to_renewal!=null?` (${r.days_to_renewal}d)`:''}</td>
+      <td>${r.campaigns_behind}/${r.campaign_count}</td>
+      <td class="muted" style="max-width:230px">${r.contributing_factors||''}</td>
+      <td>${la}</td>
+      <td style="white-space:nowrap">
+        <button class="btn" onclick="openModal('${r.advertiser_id}','${r.advertiser_name.replace(/'/g,'')}','contacted')">Contacted</button>
+        <button class="btn ghost" onclick="openModal('${r.advertiser_id}','${r.advertiser_name.replace(/'/g,'')}','snoozed')">Snooze</button>
+      </td></tr>`;}).join('');
+}
+function openModal(adv,name,type){$('#m-adv').value=adv;$('#m-type').value=type;
+  $('#m-title').textContent=(type==='contacted'?'Mark contacted — ':'Snooze — ')+name;
+  const prev=ACTIONS[adv]||{};
+  const last=$('#m-last');
+  if(prev.note||prev.action){
+    const when=prev.at?new Date(prev.at).toLocaleString():'';
+    last.innerHTML=`<div class="lbl">Last saved note</div><div class="note">${esc(prev.note||'—')}</div>`+
+      `<div class="meta">${esc(prev.action||'')}${when?' · '+esc(when):''}${prev.next?' · next connect '+esc(prev.next):''}</div>`;
+    last.hidden=false;
+  } else { last.hidden=true; last.innerHTML=''; }
+  $('#m-note').value=prev.note||'';
+  $('#m-date').value=prev.next||'';
+  $('#modal').classList.add('show');}
+function closeModal(){$('#modal').classList.remove('show');}
+async function submitAction(){
+  await fetch('/api/action',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({advertiser_id:$('#m-adv').value,action_type:$('#m-type').value,
+      note:$('#m-note').value,next_connect_date:$('#m-date').value})});
+  closeModal(); loadGrid();
+}
+function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+// column headers -> Title Case, underscores replaced with spaces (e.g. total_revenue_at_risk -> "Total Revenue At Risk").
+// Words in the acronym allowlist render fully uppercase (e.g. effective_cpm -> "Effective CPM", advertiser_id -> "Advertiser ID").
+const ACRONYMS=new Set(["cpm","id","grp","grps","auc","roi","ctr","ctv","kpi","sql","api","qsr","cpg","pii","sla","tv","url"]);
+function toTitle(s){return String(s).trim().split(/[_\s]+/).filter(Boolean)
+  .map(w=>ACRONYMS.has(w.toLowerCase())?w.toUpperCase():w.charAt(0).toUpperCase()+w.slice(1).toLowerCase()).join(' ');}
+function renderRows(rows){if(!rows)return'';
+  let h='<table><thead><tr>'+rows.columns.map(c=>`<th>${esc(toTitle(c))}</th>`).join('')+'</tr></thead><tbody>';
+  h+=rows.data.map(r=>'<tr>'+r.map(c=>`<td>${esc(String(c))}</td>`).join('')+'</tr>').join('');
+  return h+'</tbody></table>';}
+async function sendGenie(){
+  const q=$('#q').value.trim(); if(!q)return; $('#q').value='';
+  $('#log').innerHTML+=`<div class="msg u">${esc(q)}</div>`;
+  const wait=document.createElement('div');wait.className='msg g';wait.textContent='…';$('#log').appendChild(wait);
+  $('#log').scrollTop=$('#log').scrollHeight;
+  try{
+    const r=await (await fetch('/api/genie',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({question:q,conversation_id:conv})})).json();
+    conv=r.conversation_id;
+    wait.innerHTML=(r.text?esc(r.text).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>'):'')+
+      (r.sql?`<details class="sqlwrap"><summary>Show SQL</summary><pre>${esc(r.sql)}</pre></details>`:'')+renderRows(r.rows);
+  }catch(e){wait.textContent='Error: '+e;}
+  $('#log').scrollTop=$('#log').scrollHeight;
+}
+function resetGenie(){conv=null;$('#log').innerHTML='<div class="msg g">New conversation started.</div>';}
+
+// ---- Genie One + Ontology tab ----
+function mdLite(s){return esc(s||'')
+  .replace(/^#{1,4}\s+(.+)$/gm,'<b>$1</b>')
+  .replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')
+  .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,'<a href="$2" target="_blank" rel="noopener" style="color:#4ea1ff">$1</a>')
+  .replace(/\n/g,'<br>');}
+let ONT_LOADED=false;
+async function loadOntology(){
+  if(ONT_LOADED)return; ONT_LOADED=true;
+  try{
+    const g=await (await fetch('/api/ontology')).json();
+    $('#ont-cat').textContent='· '+g.catalog;
+    renderGraph(g);
+  }catch(e){ONT_LOADED=false; $('#ont-svg').innerHTML=`<text x="20" y="30" fill="#8b98ac">Could not load ontology: ${e}</text>`;}
+}
+const NS='http://www.w3.org/2000/svg';
+function svgEl(t,attrs){const e=document.createElementNS(NS,t);for(const k in attrs)e.setAttribute(k,attrs[k]);return e;}
+function renderGraph(g){
+  const svg=$('#ont-svg'); svg.innerHTML='';
+  const pos={}; g.nodes.forEach(n=>pos[n.id]={x:n.x,y:n.y});
+  const W=190,H=54;  // node box
+  // edges first (behind nodes)
+  g.edges.forEach(e=>{
+    const a=pos[e.s],b=pos[e.t]; if(!a||!b)return;
+    const x1=a.x+W/2,y1=a.y+H/2,x2=b.x+W/2,y2=b.y+H/2;
+    svg.appendChild(svgEl('line',{x1,y1,x2,y2,class:'ont-edge'}));
+    const mx=(x1+x2)/2,my=(y1+y2)/2;
+    const lbl=svgEl('text',{x:mx,y:my-3,'text-anchor':'middle',class:'ont-edge-lbl'});
+    lbl.textContent=`${e.card}  ${e.via}`;
+    svg.appendChild(lbl);
+  });
+  // nodes
+  g.nodes.forEach(n=>{
+    const gnode=svgEl('g',{class:'ont-node'+(n.hub?' hub':''),transform:`translate(${n.x},${n.y})`});
+    gnode.appendChild(svgEl('rect',{x:0,y:0,width:W,height:H,rx:9}));
+    const name=svgEl('text',{x:12,y:22,class:'ont-name'}); name.textContent=n.label; gnode.appendChild(name);
+    const meta=svgEl('text',{x:12,y:40,class:'ont-meta'}); meta.textContent=n.table+' · '+n.key; gnode.appendChild(meta);
+    if(n.count!=null){const c=svgEl('text',{x:W-12,y:22,'text-anchor':'end',class:'ont-count'}); c.textContent=Number(n.count).toLocaleString('en-US'); gnode.appendChild(c);}
+    svg.appendChild(gnode);
+  });
+}
+async function sendOne(){
+  const q=$('#oneq').value.trim(); if(!q)return; $('#oneq').value='';
+  $('#one-log').innerHTML+=`<div class="msg u">${esc(q)}</div>`;
+  const wait=document.createElement('div');wait.className='msg g';wait.textContent='… routing across your data';$('#one-log').appendChild(wait);
+  $('#one-log').scrollTop=$('#one-log').scrollHeight;
+  try{
+    const r=await (await fetch('/api/genie_one',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q})})).json();
+    let html=(r.text?mdLite(r.text):'');
+    if(r.steps&&r.steps.length) html+='<div class="one-steps">'+r.steps.map(s=>`<span class="one-step">${esc(s)}</span>`).join('')+'</div>';
+    if(r.thoughts&&r.thoughts.length) html+='<details class="one-thoughts"><summary></summary>'+r.thoughts.map(t=>`<div class="th">${mdLite(t)}</div>`).join('')+'</details>';
+    wait.innerHTML=html||'(no answer)';
+  }catch(e){wait.textContent='Error: '+e;}
+  $('#one-log').scrollTop=$('#one-log').scrollHeight;
+}
+function dmAsk(q){$('#dm-q').value=q;searchDeal();}
+async function searchDeal(){
+  const q=$('#dm-q').value.trim(); if(!q)return;
+  $('#dm-results').innerHTML='<div class="muted">Searching deal memory…</div>';
+  try{
+    const rows=await (await fetch('/api/deal_memory',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({query:q})})).json();
+    if(!rows.length){$('#dm-results').innerHTML='<div class="muted">No matching documents.</div>';return;}
+    $('#dm-results').innerHTML=rows.map(r=>`<div class="dm-card">
+      <div class="dm-head"><span class="dm-adv">${esc(r.advertiser_name)}</span>
+        <span class="dm-type">${esc(r.doc_type)}</span>
+        <span class="dm-src">${esc(r.source)} · ${esc(r.effective_date)}</span>
+        <span class="dm-score">match ${(r.score*100).toFixed(0)}%</span></div>
+      <div class="dm-body">${esc(r.content)}</div></div>`).join('');
+  }catch(e){$('#dm-results').innerHTML='<div class="muted">Error: '+esc(String(e))+'</div>';}
+}
+$('#dm-q').addEventListener('keydown',e=>{if(e.key==='Enter')searchDeal();});
+$('#q').addEventListener('keydown',e=>{if(e.key==='Enter')sendGenie();});
+$('#oneq').addEventListener('keydown',e=>{if(e.key==='Enter')sendOne();});
+boot();
+</script>
+</body>
+</html>
